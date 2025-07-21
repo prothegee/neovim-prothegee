@@ -47,7 +47,7 @@ _telescope.setup {
             },
             width = 0.9,
             height = 0.9,
-        },
+      },
         mappings = {},
     },
 
@@ -57,3 +57,24 @@ _telescope.setup {
 
     extensions = {},
 }
+
+-- rachartier/tiny-inline-diagnostic.nvim
+local _line_diagnostic = require "tiny-inline-diagnostic"
+
+_line_diagnostic.setup({
+    preset = "modern",
+    options = {
+        multilines = {
+            enabled = true,
+            always_show = true,
+            trim_whitespaces = true,
+            tabstop = 4,
+        },
+        show_all_diags_on_cursorline = false
+    },
+})
+
+-- lewis6991/gitsigns.nvim
+local _gitsign = require "gitsigns"
+
+_gitsign.setup({})

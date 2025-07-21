@@ -43,3 +43,9 @@
 [submodule "lua/plugins/nvim-lua/plenary.nvim"]
 	path = lua/plugins/nvim-lua/plenary.nvim
 	url = git@github.com:nvim-lua/plenary.nvim
+[submodule "lua/plugins/rachartier/tiny-inline-diagnostic.nvim"]
+	path = lua/plugins/rachartier/tiny-inline-diagnostic.nvim
+	url = git@github.com:rachartier/tiny-inline-diagnostic.nvim
+[submodule "lua/plugins/lewis6991/gitsigns.nvim"]
+	path = lua/plugins/lewis6991/gitsigns.nvim
+	url = git@github.com:lewis6991/gitsigns.nvim.git

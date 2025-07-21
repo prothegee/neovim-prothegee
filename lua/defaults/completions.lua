@@ -1,4 +1,5 @@
 local _cmp = require "cmp"
+local _luasnip = require "luasnip"
 
 local M = {}
 
@@ -8,7 +9,7 @@ M.options = {
     },
     snippet = {
         expand = function(args)
-            require"luasnip".lsp_expand(args.body)
+            _luasnip.lsp_expand(args.body)
         end
     },
     window = {
@@ -30,8 +31,8 @@ M.options = {
         ["<Tab>"] = _cmp.mapping(function(fallback)
             if _cmp.visible() then
                 _cmp.select_next_item()
-            elseif require("luasnip").expand_or_jumpable() then
-                require("luasnip").expand_or_jump()
+            elseif _luasnip.expand_or_jumpable() then
+                _luasnip.expand_or_jump()
             else
                 fallback()
             end
@@ -40,8 +41,8 @@ M.options = {
         ["<S-Tab>"] = _cmp.mapping(function(fallback)
             if _cmp.visible() then
                 _cmp.select_prev_item()
-            elseif require("luasnip").jumpable(-1) then
-                require("luasnip").jump(-1)
+            elseif _luasnip.jumpable(-1) then
+                _luasnip.jump(-1)
             else
                 fallback()
             end

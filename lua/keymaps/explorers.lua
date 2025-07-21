@@ -18,15 +18,27 @@ vim.keymap.set(
         desc = "File Explorer: toggle file explorer"
     }
 )
+--- close tree explorer
+vim.keymap.set(
+    "n", "<C-A-x>",
+    function()
+        local tree = _nvim_tree_api.tree
+
+        if tree.is_visible() then
+            tree.close()
+        end
+    end,
+    {
+        desc = "File Explorer: toggle file explorer"
+    }
+)
 --- go to first buffer opened
 vim.keymap.set(
     "n", "<C-A-Right>",
     function()
-        local tree = _nvim_tree_api.tree
-
         for _, bufwin in pairs(vim.api.nvim_list_wins()) do
             local buffer = vim.api.nvim_win_get_buf(bufwin)
-            local filetype = vim.api.nvim_buf_get_option(buffer, "filetype")
+            local filetype = vim.bo[buffer].filetype
 
             if filetype ~= "NvimTree" then
                 vim.api.nvim_set_current_win(bufwin)
@@ -66,5 +78,14 @@ vim.keymap.set(
     _telescope_builtin.help_tags,
     {
         desc = "Telescope: help tags"
+    }
+)
+vim.keymap.set(
+    "n", "<leader>fcmds",
+    function ()
+        vim.cmd("Telescope commands")
+    end,
+    {
+        desc = "Telescope: find command/s"
     }
 )

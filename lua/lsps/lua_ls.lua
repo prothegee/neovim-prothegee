@@ -1,5 +1,7 @@
 local M = {}
 
+local _filetypes = { "lua" }
+
 local _settings = {
     Lua = {
         runtime = { version = "LuaJIT" },
@@ -39,7 +41,8 @@ function M.initialize()
         _lspconfig.lua_ls.setup({
             capabilities = _cap.capabilities,
             on_init = _cap.on_init,
-            settings = _settings
+            settings = _settings,
+            filetypes = _filetypes,
         })
     end
 end

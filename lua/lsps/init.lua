@@ -1,4 +1,5 @@
 local _cap = require "defaults.capabilities"
+local _lang = require "defaults.languages"
 
 if vim.lsp.config then
     vim.lsp.config("*", {
@@ -7,5 +8,10 @@ if vim.lsp.config then
     })
 end
 
--- specific lua
-require"lsps.lua".initialize()
+-- default lsp
+vim.lsp.enable(_lang.servers.protocol)
+
+-- specific: lua
+require"lsps.lua_ls".initialize()
+-- specific: clangd
+-- specific: neocmake
