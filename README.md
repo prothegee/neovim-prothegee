@@ -1,12 +1,16 @@
 # neovim/nvim configuration
 
 __*NOTE:*__
-* this config doesn't use package manager
 * plugin/module use [gitmodules](./.gitmodules)
+* this config doesn't use package manager
 
 <br>
 
 ### lsp & completion
+
+* lua
+* c, cpp
+* cmake project
 
 ---
 

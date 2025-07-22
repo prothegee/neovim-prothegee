@@ -1,31 +1,21 @@
 local M = {}
 
 function M.initialize()
-    local _lsp = "lua_ls"
-    local _cmd = { "lua-language-server" }
+    local _lsp = "neocmake"
+    local _cmd = { "neocmakelsp" }
     local _cap = require "defaults.capabilities"
     local _lspconfig = require "lspconfig"
-    local _filetypes = { "lua" }
+    local _filetypes = {
+        "cmake", "CMakeLists.txt",
+    }
     local _root_markers = {
-        { ".luarc.josn", ".luarc.jsonc", "init.lua" }
+        { "CMakeLists.txt", "CMakePresets.json", "cmake", "compile_commands.json" }
     }
-    local _settings = {
-        Lua = {
-            runtime = { version = "LuaJIT" },
-            diagnostics = {
-                globals = { "vim" }
-            },
-            workspace = {
-                library = {
-                    vim.fn.expand "$VIMRUNTIME/lua",
-                    "${3rd}/luv/library",
-                }
-            }
-        }
-    }
+    local _settings = {}
 
     vim.api.nvim_create_autocmd("LspAttach", {
-        group = vim.api.nvim_create_augroup("_attach_lua.lsp", {}),
+        group = vim.api.nvim_create_augroup("_attach_neocmake.lsp", {})
+,
         callback = function(args)
             _cap.on_attach(_, args.buf)
         end,

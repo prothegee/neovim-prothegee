@@ -16,6 +16,9 @@ M.options = {
         completion = _cmp.config.window.bordered(),
         documentation = _cmp.config.window.bordered(),
     },
+    performance = {
+        debounce = 90
+    },
     mapping = {
         ["<C-p>"] = _cmp.mapping.select_prev_item(),
         ["<C-n>"] = _cmp.mapping.select_next_item(),
