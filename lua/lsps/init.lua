@@ -11,7 +11,17 @@ end
 -- default lsp
 vim.lsp.enable(_lang.servers.protocol)
 
+--[[
+for complete list from neovim lspconfig go here
+https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
+--]]
+
 -- specific: lua
 require"lsps.lua_ls".initialize()
 -- specific: clangd
+require"lsps.clangd".initialize()
 -- specific: neocmake
+require"lsps.neocmakelsp".initialize()
+-- specific: rust_analyzer
+-- specific: javascript & typescript
+-- specific: svelte
