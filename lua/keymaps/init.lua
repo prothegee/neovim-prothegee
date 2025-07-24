@@ -1,2 +1,5 @@
-require "keymaps.explorers"
-require "keymaps.terminals"
+require"keymaps.nvim_tree"
+require"keymaps.terminal"
+require"keymaps.telescope"
+
+require"keymaps.navigation_insert"

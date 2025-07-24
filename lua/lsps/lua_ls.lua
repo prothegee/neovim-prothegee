@@ -3,11 +3,11 @@ local M = {}
 function M.initialize()
     local _lsp = "lua_ls"
     local _cmd = { "lua-language-server" }
-    local _cap = require "defaults.capabilities"
-    local _lspconfig = require "lspconfig"
+    local _cap = require"defaults.completion"
+    local _lspconfig = require"lspconfig"
     local _filetypes = { "lua" }
     local _root_markers = {
-        { ".luarc.josn", ".luarc.jsonc", "init.lua" }
+        { ".luarc.json", ".luarc.jsonc", "init.lua" }
     }
     local _settings = {
         Lua = {
