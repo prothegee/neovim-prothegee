@@ -1,2 +1,2 @@
-require "utils.managers"
-require "utils.options"
+require"utils.theme"
+require"utils.diagnostic"

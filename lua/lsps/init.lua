@@ -1,27 +1,22 @@
-local _cap = require "defaults.capabilities"
-local _lang = require "defaults.languages"
+-- default lsps
+local _default_lsps = {
+    "clangd", "neocmake",
+    "rust_analyzer",
+    "ts_ls",
+    "svelte",
+    "html", "cssls",
+    "jsonls",
+    "markdown_oxide",
+}
+vim.lsp.enable(_default_lsps)
 
-if vim.lsp.config then
-    vim.lsp.config("*", {
-        capabilities = _cap.capabilities,
-        on_init = _cap.on_init
-    })
-end
-
--- default lsp
-vim.lsp.enable(_lang.servers.protocol)
-
---[[
-for complete list from neovim lspconfig go here
-https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
---]]
-
--- specific: lua
 require"lsps.lua_ls".initialize()
--- specific: clangd
 require"lsps.clangd".initialize()
--- specific: neocmake
-require"lsps.neocmakelsp".initialize()
--- specific: rust_analyzer
--- specific: javascript & typescript
--- specific: svelte
+require"lsps.neocmake".initialize()
+require"lsps.rust_analyzer".initialize()
+require"lsps.ts_ls".initialize()
+require"lsps.svelte".initialize()
+require"lsps.markdown_oxide".initialize()
+require"lsps.html".initialize()
+require"lsps.cssls".initialize()
+require"lsps.jsonls".initialize()

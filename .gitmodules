@@ -1,51 +1,18 @@
-[submodule "lua/plugins/nvim-tree/nvim-tree.lua"]
-	path = lua/plugins/nvim-tree/nvim-tree.lua
+[submodule "vendor/nvim-tree.lua"]
+	path = vendor/nvim-tree.lua
 	url = git@github.com:nvim-tree/nvim-tree.lua.git
-[submodule "lua/plugins/olimoris/onedarkpro.nvim"]
-	path = lua/plugins/olimoris/onedarkpro.nvim
-	url = git@github.com:olimorris/onedarkpro.nvim.git
-[submodule "lua/plugins/neovim/nvim-lspconfig"]
-	path = lua/plugins/neovim/nvim-lspconfig
-	url = git@github.com:neovim/nvim-lspconfig.git
-[submodule "lua/plugins/L3MON4D3/LuaSnip"]
-	path = lua/plugins/L3MON4D3/LuaSnip
-	url = git@github.com:L3MON4D3/LuaSnip
-[submodule "lua/plugins/rafamadriz/friendly-snippets"]
-	path = lua/plugins/rafamadriz/friendly-snippets
-	url = git@github.com:rafamadriz/friendly-snippets
-[submodule "lua/plugins/saadparwaiz1/cmp_luasnip"]
-	path = lua/plugins/saadparwaiz1/cmp_luasnip
-	url = git@github.com:saadparwaiz1/cmp_luasnip
-[submodule "lua/plugins/FelipeLema/cmp-async-path"]
-	path = lua/plugins/FelipeLema/cmp-async-path
-	url = https://codeberg.org/FelipeLema/cmp-async-path.git
-[submodule "lua/plugins/hrsh7th/nvim-cmp"]
-	path = lua/plugins/hrsh7th/nvim-cmp
-	url = git@github.com:hrsh7th/nvim-cmp
-[submodule "lua/plugins/hrsh7th/cmp-buffer"]
-	path = lua/plugins/hrsh7th/cmp-buffer
-	url = git@github.com:hrsh7th/cmp-buffer
-[submodule "lua/plugins/hrsh7th/cmp-nvim-lsp"]
-	path = lua/plugins/hrsh7th/cmp-nvim-lsp
-	url = git@github.com:hrsh7th/cmp-nvim-lsp
-[submodule "lua/plugins/hrsh7th/cmp-nvim-lua"]
-	path = lua/plugins/hrsh7th/cmp-nvim-lua
-	url = git@github.com:hrsh7th/cmp-nvim-lua
-[submodule "lua/plugins/nvim-telescope/telescope.nvim"]
-	path = lua/plugins/nvim-telescope/telescope.nvim
-	url = git@github.com:nvim-telescope/telescope.nvim
-[submodule "lua/plugins/nvim-tree/nvim-web-devicons"]
-	path = lua/plugins/nvim-tree/nvim-web-devicons
+[submodule "vendor/nvim-web-devicons"]
+	path = vendor/nvim-web-devicons
 	url = git@github.com:nvim-tree/nvim-web-devicons
-[submodule "lua/plugins/nvim-lualine/lualine.nvim"]
-	path = lua/plugins/nvim-lualine/lualine.nvim
-	url = git@github.com:nvim-lualine/lualine.nvim
-[submodule "lua/plugins/nvim-lua/plenary.nvim"]
-	path = lua/plugins/nvim-lua/plenary.nvim
+[submodule "vendor/telescope.nvim"]
+	path = vendor/telescope.nvim
+	url = git@github.com:nvim-telescope/telescope.nvim
+[submodule "vendor/plenary.nvim"]
+	path = vendor/plenary.nvim
 	url = git@github.com:nvim-lua/plenary.nvim
-[submodule "lua/plugins/rachartier/tiny-inline-diagnostic.nvim"]
-	path = lua/plugins/rachartier/tiny-inline-diagnostic.nvim
-	url = git@github.com:rachartier/tiny-inline-diagnostic.nvim
-[submodule "lua/plugins/lewis6991/gitsigns.nvim"]
-	path = lua/plugins/lewis6991/gitsigns.nvim
+[submodule "vendor/gitsigns.nvim"]
+	path = vendor/gitsigns.nvim
 	url = git@github.com:lewis6991/gitsigns.nvim.git
+[submodule "vendor/lualine.nvim"]
+	path = vendor/lualine.nvim
+	url = git@github.com:nvim-lualine/lualine.nvim
