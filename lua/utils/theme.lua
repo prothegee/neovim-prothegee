@@ -27,4 +27,7 @@ vim.cmd [[
   highlight NonText guibg=none
   highlight Normal ctermbg=none
   highlight NonText ctermbg=none
+
+  highlight VertSplit guibg=none
+  highlight SignColumn guibg=none
 ]]

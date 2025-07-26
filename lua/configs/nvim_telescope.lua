@@ -13,7 +13,7 @@ _telescope.setup {
             },
             width = 0.9,
             height = 0.9,
-      },
+        },
         mappings = {},
     },
 

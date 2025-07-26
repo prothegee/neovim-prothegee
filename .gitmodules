@@ -16,3 +16,12 @@
 [submodule "vendor/lualine.nvim"]
 	path = vendor/lualine.nvim
 	url = git@github.com:nvim-lualine/lualine.nvim
+[submodule "vendor/nvim-dap"]
+	path = vendor/nvim-dap
+	url = git@github.com:mfussenegger/nvim-dap.git
+[submodule "vendor/nvim-dap-ui"]
+	path = vendor/nvim-dap-ui
+	url = git@github.com:rcarriga/nvim-dap-ui.git
+[submodule "vendor/nvim-nio"]
+	path = vendor/nvim-nio
+	url = git@github.com:nvim-neotest/nvim-nio.git

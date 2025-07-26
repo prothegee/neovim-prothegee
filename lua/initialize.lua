@@ -3,4 +3,5 @@ require"lsps"
 require"options"
 require"keymaps"
 require"utils"
+require"commands"
 

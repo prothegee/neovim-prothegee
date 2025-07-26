@@ -3,7 +3,11 @@ vim.g.maplocalleader = "\\"
 
 local _plugin_path = vim.fn.stdpath "config" .. "/vendor"
 
-for _, vendor in pairs(vim.fn.glob(_plugin_path .. "/*", 0, 1, 2)) do
+local _matchs, _hidden, _specchar = true, false, false
+
+local _vendors = vim.split(vim.fn.glob(_plugin_path .. "/*", _matchs, _hidden, _specchar), "\n")
+
+for _, vendor in ipairs(_vendors) do
     if vim.fn.isdirectory(vendor) == 1 then
         vim.opt.rtp:prepend(vendor)
 

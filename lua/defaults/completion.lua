@@ -1,7 +1,7 @@
 
 local M = {}
 
-local DELAY_COMPLETION = 120
+local DELAY_COMPLETION = 0
 
 local helper_lsp_buf = function()
     vim.keymap.set("n", "<leader>gtdec",
