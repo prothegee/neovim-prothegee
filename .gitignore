@@ -1,22 +1,8 @@
 ##
 ## directory
 ##
-.bin
-.out
-.log
-.logs
-.data
-.lazy
-.nvim
-.mason
 .cache
-.svelte-kit
-
-bin
-build
-out
-target
-node_modules
+.nvim
 
 ##
 ## extension
@@ -27,11 +13,7 @@ node_modules
 ##
 ## file: include
 ##
-lazy-lock.json
-.tmp*
-compile_commands.json
 
 ##
 ## file: exclude
 ##
-

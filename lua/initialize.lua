@@ -1,7 +1,3 @@
+require"plugins"
 require"configs"
-require"lsps"
-require"options"
-require"keymaps"
-require"utils"
-require"commands"
-
+require"settings"
