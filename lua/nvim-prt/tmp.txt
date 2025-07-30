@@ -1,0 +1,7 @@
+hey, I said I still can navigate with left and right arrow, why 2 revision still not fixing that when i press left or right?
+
+the problem is still on the insert mode when first time popup and the cursor still able to move left and right (with left & right arrow)
+
+doesn't matter where I press left or right in any line, it shouldn't navigate the cursor when search or navigating, except when line to to search
+
+also `get_buf_by_name` is unused

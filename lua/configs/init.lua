@@ -1,5 +1,2 @@
-require"configs.nvim_tree"
-require"configs.nvim_web_devicons"
-require"configs.telescope"
-require"configs.gitsign"
-require"configs.lualine"
+-- skip cap.lua
+require"configs.diagnostic"
