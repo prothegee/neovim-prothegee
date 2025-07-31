@@ -20,12 +20,14 @@ function NVIM_PRT.setup(opts)
     opts = vim.tbl_extend("force", NVIM_PRT.options, opts or {})
 
     if next(opts) == nil then
-        print("qweqweqwe")
+        vim.schedule(function()
+            vim.notify("INFO: NVIM_PRT opts from setup is nil", vim.log.levels.INFO)
+        end)
         return
     end
 
     if opts.default then
-        require"nvim-prt.cmdc"
+        require"nvim-prt.cmdctr"
         require"nvim-prt.xplrr"
     end
 end
