@@ -5,12 +5,12 @@ local XPLRR = {}
 local config = {
     hidden = true,
     follow_symlinks = false,
-    max_results = 100,
+    max_results = 256,
     border = "rounded",
     highlight_ns = vim.api.nvim_create_namespace("XplrrHighlight"),
 }
 
--- State management
+-- state management
 local state = {
     buf = nil,
     win = nil,
@@ -192,6 +192,8 @@ local function update_display()
         "> "..state.search_term
     }
 
+    state.header_lines = #display_lines -- set header lines count here
+
     -- add search input and results
     for i, result in ipairs(state.results) do
         local prefix = (state.selected_index == i) and "➤ " or "  "
@@ -206,19 +208,19 @@ local function update_display()
         state.extmark_id = nil
     end
 
-    -- highlight for selected item (if in file selection)
+    -- Highlight active line with full-width block
     if state.selected_index > 0 then
+        local line_index = state.header_lines + state.selected_index - 1
         state.extmark_id = vim.api.nvim_buf_set_extmark(
             state.buf,
             config.highlight_ns,
-            state.selected_index + state.header_lines,  -- line (0-based: header + search + selected)
-            0,                                          -- column
+            line_index,   -- line number (0-based)
+            0,            -- starting column
             {
                 hl_group = "Visual",
-                end_line = state.selected_index + state.header_lines,
-                end_col = 0,
-                hl_eol = true,
-                priority = 50,
+                end_line = line_index + 1,
+                end_col = 0,        -- 0 = start of next line
+                priority = 100,      -- ensure it's above syntax highlights
             }
         )
     end
@@ -314,42 +316,28 @@ local function create_window(mode)
             update_display()
             vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
             vim.api.nvim_command("startinsert")
-
-            -- ensure header is visible
-            vim.fn.winrestview({topline = 1})
         else
             -- move up in file list
             state.selected_index = state.selected_index - 1
             update_display()
-            vim.api.nvim_win_set_cursor(state.win, {state.selected_index + state.header_lines, 0})
-
-            -- keep header in view when near top
-            if state.selected_index == 1 then
-                vim.fn.winrestview({topline = 1})
-            end
+            -- Set cursor to the beginning of the line
+            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index, 0})
         end
     end
 
     local function move_down()
-        --[[
-        NOTE & TODO:
-        * after search typing and goes down, the first items change same as search value
-        --]]
         if state.selected_index == 0 then
             -- move from search input to first file
             if #state.results > 0 then
                 state.selected_index = 1
                 update_display()
                 vim.api.nvim_win_set_cursor(state.win, {state.header_lines + 1, 0})
-
-                -- ensure header is visible
-                vim.fn.winrestview({topline = 1})
             end
         elseif state.selected_index < #state.results then
             -- move down in file list
             state.selected_index = state.selected_index + 1
             update_display()
-            vim.api.nvim_win_set_cursor(state.win, {state.selected_index + state.header_lines, 0})
+            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index, 0})
         end
     end
 
@@ -483,6 +471,15 @@ end
 
 ---
 
+-- this xplrr command list
+XPLRR.cmd = {
+    xplrr_files = "Xplrr",
+    xplrr_buffers = "XplrrBuffers"
+}
+
+---
+
+-- call xplrr for files
 function XPLRR.toggle_files()
     if state.win and vim.api.nvim_win_is_valid(state.win) then
         close_window()
@@ -491,6 +488,7 @@ function XPLRR.toggle_files()
     end
 end
 
+-- call xplrr for buffers
 function XPLRR.toggle_buffers()
     if state.win and vim.api.nvim_win_is_valid(state.win) then
         close_window()
@@ -503,5 +501,7 @@ end
 
 vim.api.nvim_create_user_command("Xplrr", XPLRR.toggle_files, {})
 vim.api.nvim_create_user_command("XplrrBuffers", XPLRR.toggle_buffers, {})
+
+---
 
 return XPLRR
