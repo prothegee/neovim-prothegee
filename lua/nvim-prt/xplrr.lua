@@ -135,15 +135,45 @@ local function update_results()
         end
     else
         state.results = {}
+        local lower_term = state.search_term:lower()
+        local matches = {}   -- will hold {file, score}
 
         -- filter files based on search term
         for _, file in ipairs(state.all_files) do
-            if fuzzy_match(state.search_term, file) then
-                table.insert(state.results, file)
-                if #state.results >= config.max_results then
-                    break
+            local lower_file = file:lower()
+            if fuzzy_match(lower_term, lower_file) then
+                -- prioritize exact substring matches at the beginning
+                local start_index = string.find(lower_file, lower_term, 1, true)  -- plain search
+                local score = 0
+
+                if start_index then
+                    -- exact match bonus: earlier start gets lower score
+                    score = start_index - 1000000
+                else
+                    -- find first occurrence of first char for fuzzy matches
+                    local first_char = lower_term:sub(1, 1)
+                    start_index = string.find(lower_file, first_char, 1, true) or 1
+                    score = start_index
                 end
+
+                -- secondary sort: shorter paths first
+                score = score + #file * 0.000001
+
+                table.insert(matches, {file = file, score = score})
             end
+        end
+
+        -- sort by score (lower is better)
+        table.sort(matches, function(a, b)
+            if a.score == b.score then
+                return a.file < b.file
+            end
+            return a.score < b.score
+        end)
+
+        -- take top results
+        for i = 1, math.min(#matches, config.max_results) do
+            table.insert(state.results, matches[i].file)
         end
     end
 
@@ -196,6 +226,7 @@ local function update_display()
 
     -- add search input and results
     for i, result in ipairs(state.results) do
+        -- Only show arrow prefix for the currently selected item
         local prefix = (state.selected_index == i) and "➤ " or "  "
         table.insert(display_lines, prefix..result)
     end
@@ -208,7 +239,7 @@ local function update_display()
         state.extmark_id = nil
     end
 
-    -- Highlight active line with full-width block
+    -- highlight active line with full-width block
     if state.selected_index > 0 then
         local line_index = state.header_lines + state.selected_index - 1
         state.extmark_id = vim.api.nvim_buf_set_extmark(
@@ -219,8 +250,8 @@ local function update_display()
             {
                 hl_group = "Visual",
                 end_line = line_index + 1,
-                end_col = 0,        -- 0 = start of next line
-                priority = 100,      -- ensure it's above syntax highlights
+                end_col = 0,                -- 0 = start of next line
+                priority = 100,             -- ensure it's above syntax highlights
             }
         )
     end
@@ -320,8 +351,8 @@ local function create_window(mode)
             -- move up in file list
             state.selected_index = state.selected_index - 1
             update_display()
-            -- Set cursor to the beginning of the line
-            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index, 0})
+            -- corrected line index calculation
+            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
         end
     end
 
@@ -331,13 +362,15 @@ local function create_window(mode)
             if #state.results > 0 then
                 state.selected_index = 1
                 update_display()
-                vim.api.nvim_win_set_cursor(state.win, {state.header_lines + 1, 0})
+                -- FIXED: Corrected line index calculation
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
             end
         elseif state.selected_index < #state.results then
             -- move down in file list
             state.selected_index = state.selected_index + 1
             update_display()
-            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index, 0})
+            -- FIXED: Corrected line index calculation
+            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
         end
     end
 
@@ -396,7 +429,6 @@ local function create_window(mode)
             move_up()
         end, {buffer = state.buf}},
 
-        -- NOTE: kinda important
         -- disable left/right navigation in file list
         {"n", "<Left>", "<Nop>", {buffer = state.buf}},
         {"n", "<Right>", "<Nop>", {buffer = state.buf}},
