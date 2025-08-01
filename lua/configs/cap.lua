@@ -2,6 +2,12 @@ local CAP = {}
 
 ---
 
+local _buf_default_completion = function(bufnum)
+    vim.bo[bufnum].omnifunc = "v:lua.vim.lsp.omnifunc"
+    -- https://neovim.io/doc/user/options.html#'completeopt'
+    vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
+end
+
 local _buf_helper_completion = function(bufnum, ...)
     vim.api.nvim_buf_set_keymap(bufnum, ...)
 end
@@ -9,8 +15,8 @@ end
 local _completion_trigger = function(client, bufnum)
     vim.opt.shortmess:append("c")
     vim.bo[bufnum].omnifunc = "v:lua.vim.lsp.omnifunc"
-    -- https://neovim.io/doc/user/options.html#'completeopt'
-    vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
+
+    _buf_default_completion(bufnum)
 
     -- mode: insert
     -- trigger by using ctrl+space
@@ -59,7 +65,7 @@ CAP.capabilities.textDocument.completion = {
 ---
 
 -- on init
-function CAP.on_init(client, bufn)
+function CAP.on_init(client, bufnum)
     if client:supports_method("textDocument/semanticTokens") then
         client.server_capabilities.semanticTokensProvider = nil
     end
@@ -68,6 +74,11 @@ end
 -- on attach
 function CAP.on_attach(client, bufnum)
     _completion_trigger(client, bufnum)
+end
+
+-- default completion
+function CAP.default_completion(bufnum)
+    _buf_default_completion(bufnum)
 end
 
 ---
