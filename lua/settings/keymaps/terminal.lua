@@ -49,7 +49,7 @@ end
 --- horizontal
 vim.keymap.set(
     { "n", "i", "v", "t" },
-    "<C-A-h>",
+    "<C-A-t>",
     open_terminal_horizontal,
     {
         desc = "terminal horizontal"

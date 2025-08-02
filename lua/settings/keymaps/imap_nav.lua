@@ -6,7 +6,6 @@ vim.api.nvim_set_keymap("i", "<A-BS>",
     silent = true,
     noremap = true
 })
-
 -- delete forward
 vim.api.nvim_set_keymap("i", "<A-Del>",
     "<C-o>dw",

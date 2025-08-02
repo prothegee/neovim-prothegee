@@ -16,7 +16,7 @@ local state = {
     win = nil,
     search_term = "",
     results = {},
-    selected_index = 0,         -- 0 = search input, 1+ = file selection
+    selected_index = 0,
     cwd = vim.fn.getcwd(),
     extmark_id = nil,
     all_files = {},             -- cache all files in the directory
@@ -149,7 +149,7 @@ local function update_results()
                 local start_index = string.find(lower_file, lower_term, 1, true) -- plain search
 
                 if start_index then
-                    -- exact match bonus: earlier start gets lower scoer
+                    -- exact match bonus: earlier start gets lower score
                     score = start_index - 1000000
                 else
                     -- find first occurrence of first char for fuzzy matches
@@ -307,7 +307,7 @@ local function create_window(mode)
     -- create buffer
     state.buf = vim.api.nvim_create_buf(false, true)
     if not is_valid_buf(state.buf) then
-        vim.notify("Failed to create XPLRR buffer", vim.log.levels.ERROR)
+        vim.notify("failed to create XPLRR buffer", vim.log.levels.ERROR)
         return
     end
 
@@ -324,7 +324,7 @@ local function create_window(mode)
     update_results()
 
     -- window dimensions
-    local width = math.floor(vim.o.columns * 0.8)
+    local width = math.floor(vim.o.columns * 0.9)
     local height = math.floor(vim.o.lines * 0.6)
 
     -- window options
@@ -343,16 +343,16 @@ local function create_window(mode)
     -- create window
     state.win = vim.api.nvim_open_win(state.buf, true, win_opts)
     if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-        vim.notify("Failed to create XPLRR window", vim.log.levels.ERROR)
+        vim.notify("failed to create XPLRR window", vim.log.levels.ERROR)
         return
     end
 
     -- set buffer options
-    vim.bo[state.buf].filetype = "xplrr"
     vim.bo[state.buf].buftype = "nofile"
-    vim.bo[state.buf].bufhidden = "wipe"
-    vim.bo[state.buf].swapfile = false
+    vim.bo[state.buf].filetype = "xplrr"
     vim.bo[state.buf].omnifunc = "v:lua.vim.lsp.omnifunc"  -- prevent E764
+    vim.bo[state.buf].swapfile = false
+    vim.bo[state.buf].bufhidden = "wipe"
 
     -- navigation functions
     --- move up
@@ -372,7 +372,7 @@ local function create_window(mode)
             -- move up in file list
             state.selected_index = state.selected_index - 1
             update_display()
-            -- -- corrected line index calculation
+            -- corrected line index calculation
             vim.api.nvim_win_set_cursor(state.win, {state.selected_index + state.header_lines, 0})
 
             -- keep header in view when near top
@@ -388,10 +388,7 @@ local function create_window(mode)
             if #state.results > 0 then
                 state.selected_index = 1
                 update_display()
-                -- NOTE: this first navigate down has wrong consistent behaviour for the hightlight
-                vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
-
-                -- ensure header is visible
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index, 0})
                 vim.fn.winrestview({topline = 1})
             end
         elseif state.selected_index < #state.results then
@@ -432,8 +429,8 @@ local function create_window(mode)
             end
         end, {buffer = state.buf}},
 
-        {"n", "<Esc>", close_window, {buffer = state.buf}},
-        {"i", "<Esc>", close_window, {buffer = state.buf}},
+        -- {"n", "<Esc>", close_window, {buffer = state.buf}},
+        -- {"i", "<Esc>", close_window, {buffer = state.buf}},
         {"n", "q", close_window, {buffer = state.buf}},
 
         {"n", "<Up>", move_up, {buffer = state.buf}},
@@ -566,7 +563,19 @@ end
 
 ---
 
-vim.api.nvim_create_user_command("Xplrr", XPLRR.toggle_files, {})
-vim.api.nvim_create_user_command("XplrrBuffers", XPLRR.toggle_buffers, {})
+vim.api.nvim_create_user_command(
+    XPLRR.cmd.xplrr_files,
+    XPLRR.toggle_files,
+    {
+        desc = "XPLRR: search all files (including hidden files)"
+    }
+)
+vim.api.nvim_create_user_command(
+    XPLRR.cmd.xplrr_buffers,
+    XPLRR.toggle_buffers,
+    {
+        desc = "XPLRR: search all opened buffers"
+    }
+)
 
 return XPLRR
