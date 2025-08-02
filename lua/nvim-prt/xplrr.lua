@@ -16,13 +16,15 @@ local state = {
     win = nil,
     search_term = "",
     results = {},
-    selected_index = 0,     -- 0 = search input, 1+ = file selection
+    selected_index = 0,         -- 0 = search input, 1+ = file selection
     cwd = vim.fn.getcwd(),
     extmark_id = nil,
-    all_files = {},         -- cache all files in the directory
-    original_win = nil,     -- origin window before opening finder
-    header_lines = 2,       -- n of fixed header lines
-    mode = "files",         -- "files" or "buffers"
+    all_files = {},             -- cache all files in the directory
+    original_win = nil,         -- origin window before opening finder
+    header_lines = 2,           -- n of fixed header lines
+    mode = "files",             -- "files" or "buffers"
+    buf_keymaps = {},           -- stores keymaps to clear later
+    win_closed_autocmd = nil,   -- tracks window autocommand
 }
 
 local function is_windows()
@@ -135,19 +137,19 @@ local function update_results()
         end
     else
         state.results = {}
+        local matches = {} -- will hold {file, score}
         local lower_term = state.search_term:lower()
-        local matches = {}   -- will hold {file, score}
 
         -- filter files based on search term
         for _, file in ipairs(state.all_files) do
             local lower_file = file:lower()
             if fuzzy_match(lower_term, lower_file) then
                 -- prioritize exact substring matches at the beginning
-                local start_index = string.find(lower_file, lower_term, 1, true)  -- plain search
                 local score = 0
+                local start_index = string.find(lower_file, lower_term, 1, true) -- plain search
 
                 if start_index then
-                    -- exact match bonus: earlier start gets lower score
+                    -- exact match bonus: earlier start gets lower scoer
                     score = start_index - 1000000
                 else
                     -- find first occurrence of first char for fuzzy matches
@@ -159,7 +161,7 @@ local function update_results()
                 -- secondary sort: shorter paths first
                 score = score + #file * 0.000001
 
-                table.insert(matches, {file = file, score = score})
+                table.insert(matches, { file = file, score = score  })
             end
         end
 
@@ -180,7 +182,7 @@ local function update_results()
     -- adjustment selection index
     if #state.results > 0 then
         if state.selected_index == 0 then
-            -- Keep selection in search input
+            -- keep selection in search input
         elseif state.selected_index > #state.results then
             state.selected_index = #state.results
         end
@@ -226,7 +228,6 @@ local function update_display()
 
     -- add search input and results
     for i, result in ipairs(state.results) do
-        -- Only show arrow prefix for the currently selected item
         local prefix = (state.selected_index == i) and "➤ " or "  "
         table.insert(display_lines, prefix..result)
     end
@@ -245,24 +246,40 @@ local function update_display()
         state.extmark_id = vim.api.nvim_buf_set_extmark(
             state.buf,
             config.highlight_ns,
-            line_index,   -- line number (0-based)
-            0,            -- starting column
+            line_index,     -- line number (0-based)
+            0,              -- starting column
             {
-                hl_group = "Visual",
+                hl_group = "visual",
                 end_line = line_index + 1,
                 end_col = 0,                -- 0 = start of next line
-                priority = 100,             -- ensure it's above syntax highlights
+                priority = 100,             -- ensure it's above syntax hightlight
             }
         )
     end
 end
 
 local function close_window()
-    -- clear highlight when closing
+    -- remove window autocommand
+    if state.win_closed_autocmd then
+        pcall(vim.api.nvim_del_autocmd, state.win_closed_autocmd)
+        state.win_closed_autocmd = nil
+    end
+
+    -- clear highlight
     if state.extmark_id and is_valid_buf(state.buf) then
         vim.api.nvim_buf_del_extmark(state.buf, config.highlight_ns, state.extmark_id)
     end
 
+    -- remove all keymaps we created
+    if state.buf_keymaps and is_valid_buf(state.buf) then
+        for _, keymap in ipairs(state.buf_keymaps) do
+            local mode, lhs = keymap[1], keymap[2]
+            pcall(vim.api.nvim_buf_del_keymap, state.buf, mode, lhs)
+        end
+        state.buf_keymaps = {}
+    end
+
+    -- close window
     if state.win and vim.api.nvim_win_is_valid(state.win) then
         vim.api.nvim_win_close(state.win, true)
     end
@@ -338,6 +355,7 @@ local function create_window(mode)
     vim.bo[state.buf].omnifunc = "v:lua.vim.lsp.omnifunc"  -- prevent E764
 
     -- navigation functions
+    --- move up
     local function move_up()
         if state.selected_index == 0 then
             -- already at top, do nothing
@@ -347,30 +365,43 @@ local function create_window(mode)
             update_display()
             vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
             vim.api.nvim_command("startinsert")
+
+            -- ensure header is visible
+            vim.fn.winrestview({topline = 1})
         else
             -- move up in file list
             state.selected_index = state.selected_index - 1
             update_display()
-            -- corrected line index calculation
-            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
+            -- -- corrected line index calculation
+            vim.api.nvim_win_set_cursor(state.win, {state.selected_index + state.header_lines, 0})
+
+            -- keep header in view when near top
+            if state.selected_index == 1 then
+                vim.fn.winrestview({topline = 1})
+            end
         end
     end
-
+    --- move down
     local function move_down()
         if state.selected_index == 0 then
             -- move from search input to first file
             if #state.results > 0 then
                 state.selected_index = 1
                 update_display()
-                -- FIXED: Corrected line index calculation
+                -- NOTE: this first navigate down has wrong consistent behaviour for the hightlight
                 vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
+
+                -- ensure header is visible
+                vim.fn.winrestview({topline = 1})
             end
         elseif state.selected_index < #state.results then
             -- move down in file list
             state.selected_index = state.selected_index + 1
             update_display()
-            -- FIXED: Corrected line index calculation
-            vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
+            vim.api.nvim_win_set_cursor(state.win, {state.selected_index + state.header_lines, 0})
+
+            -- ensure header is visible
+            vim.fn.winrestview({topline = 1})
         end
     end
 
@@ -436,8 +467,12 @@ local function create_window(mode)
         {"i", "<Right>", "<Nop>", {buffer = state.buf}},
     }
 
+    -- store and set keymaps
+    state.buf_keymaps = {}
     for _, map in ipairs(mappings) do
-        vim.keymap.set(map[1], map[2], map[3], map[4])
+        local mode, lhs = map[1], map[2]
+        table.insert(state.buf_keymaps, {mode, lhs})
+        vim.keymap.set(mode, lhs, map[3], map[4])
     end
 
     local function restrict_cursor()
@@ -533,7 +568,5 @@ end
 
 vim.api.nvim_create_user_command("Xplrr", XPLRR.toggle_files, {})
 vim.api.nvim_create_user_command("XplrrBuffers", XPLRR.toggle_buffers, {})
-
----
 
 return XPLRR
