@@ -1,0 +1,5 @@
+# https://editorconfig.org/
+# https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties
+[*]
+indent_size = 4
+indent_style = space

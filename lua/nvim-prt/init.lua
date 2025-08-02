@@ -4,14 +4,6 @@ local NVIM_PRT = {}
 
 NVIM_PRT.options = {
     default = false,
-
-    cmdc = {
-        init = false
-    },
-
-    xplrr = {
-        init = false
-    }
 }
 
 ---
@@ -27,7 +19,7 @@ function NVIM_PRT.setup(opts)
     end
 
     if opts.default then
-        require"nvim-prt.cmdctr"
+        require"nvim-prt.cmdc"
         require"nvim-prt.xplrr"
     end
 end

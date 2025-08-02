@@ -17,3 +17,16 @@ require"gitsigns".setup()
 require"nvim-prt".setup({
     default = true
 })
+require"nvim-prt.cmdc".setup({
+    commands = {
+        ["Test 1"] = function()
+            print("DEBUG: Test 1")
+        end,
+        ["Test 2"] = function()
+            print("DEBUG: Test 2")
+        end,
+        ["Test 3"] = function()
+            print("DEBUG: Test 3")
+        end,
+    }
+})

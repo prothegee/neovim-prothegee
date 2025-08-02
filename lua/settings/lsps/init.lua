@@ -86,7 +86,7 @@ end
 -- do something when bufenter
 vim.api.nvim_create_autocmd("BufEnter", {
     pattern = "*",
-   callback = function(args)
+    callback = function(args)
         local buffer = args.buf
         local buffname = vim.fn.expand("%")
 
