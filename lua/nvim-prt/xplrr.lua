@@ -388,7 +388,7 @@ local function create_window(mode)
             if #state.results > 0 then
                 state.selected_index = 1
                 update_display()
-                vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index, 0})
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
                 vim.fn.winrestview({topline = 1})
             end
         elseif state.selected_index < #state.results then
