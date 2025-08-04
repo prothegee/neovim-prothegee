@@ -2,12 +2,21 @@
 local function open_terminal_horizontal()
     -- check if we're currently in a terminal buffer
     if vim.api.nvim_get_option_value("buftype", { buf = 0 }) == "terminal" then
+        local buf = vim.api.nvim_get_current_buf()
+        local windows = vim.fn.win_findbuf(buf)
+
         vim.cmd("close")
+
+        -- delete buffer if it was the only window showing it
+        if #windows == 1 then
+            vim.api.nvim_buf_delete(buf, { force = true })
+        end
+
         return
     end
 
-    local terminal_window = nil
-    local terminal_buffer = nil
+    local terminal_window
+    local terminal_buffer
 
     -- check for visible terminal windows
     for _, window in ipairs(vim.api.nvim_list_wins()) do
@@ -21,7 +30,14 @@ local function open_terminal_horizontal()
 
     -- if terminal window exists and is valid, close it
     if terminal_window and vim.api.nvim_win_is_valid(terminal_window) then
+        local windows = vim.fn.win_findbuf(terminal_buffer)
+
         vim.api.nvim_win_close(terminal_window, true)
+
+        -- delete buffer if exists
+        if #windows == 1 then
+            vim.api.nvim_buf_delete(terminal_buffer, { force = true })
+        end
     else
         -- look for existing terminal buffer (even if not visible)
         if not terminal_buffer then

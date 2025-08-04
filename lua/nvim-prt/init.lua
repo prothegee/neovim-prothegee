@@ -2,9 +2,13 @@ local NVIM_PRT = {}
 
 ---
 
+-- nvim-prt options
 NVIM_PRT.options = {
     default = false,
 }
+
+-- actual nvim-prt dir
+NVIM_PRT.dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
 
 ---
 

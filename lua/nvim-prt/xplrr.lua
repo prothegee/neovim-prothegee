@@ -431,7 +431,8 @@ local function create_window(mode)
 
         -- {"n", "<Esc>", close_window, {buffer = state.buf}},
         -- {"i", "<Esc>", close_window, {buffer = state.buf}},
-        {"n", "q", close_window, {buffer = state.buf}},
+        {"n", "<C-q>", close_window, {buffer = state.buf}},
+        {"i", "<C-q>", close_window, {buffer = state.buf}},
 
         {"n", "<Up>", move_up, {buffer = state.buf}},
         {"i", "<Up>", function()
@@ -470,6 +471,35 @@ local function create_window(mode)
         local mode, lhs = map[1], map[2]
         table.insert(state.buf_keymaps, {mode, lhs})
         vim.keymap.set(mode, lhs, map[3], map[4])
+    end
+
+    -- add printable character mappings to return to input field
+    local printable_chars = ""
+    for i = 32, 126 do
+        printable_chars = printable_chars .. string.char(i)
+    end
+
+    for i = 1, #printable_chars do
+        local char = printable_chars:sub(i, i)
+        local mode = "n"
+        local lhs = char
+        local rhs = function()
+            if state.selected_index > 0 then
+                state.selected_index = 0
+                state.search_term = state.search_term .. char
+                update_results()
+                update_display()
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+                vim.api.nvim_command("startinsert")
+            else
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+                vim.api.nvim_command("startinsert")
+                vim.api.nvim_feedkeys(char, 'i', false)
+            end
+        end
+
+        table.insert(state.buf_keymaps, {mode, lhs})
+        vim.keymap.set(mode, lhs, rhs, { buffer = state.buf, nowait = true })
     end
 
     local function restrict_cursor()
