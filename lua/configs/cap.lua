@@ -3,7 +3,6 @@ local CAP = {}
 ---
 
 local _buf_default_completion = function(bufnum)
-    vim.bo[bufnum].omnifunc = "v:lua.vim.lsp.omnifunc"
     -- https://neovim.io/doc/user/options.html#'completeopt'
     vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
 end
@@ -36,30 +35,26 @@ end
 
 -- this default capabilities
 CAP.capabilities = vim.lsp.protocol.make_client_capabilities()
--- base
+-- base completion
 CAP.capabilities.textDocument.completion = {
-    dynamicRegistration = true,
-    contextSupport = true,
-    completionItem = {
-        documentationFormat = { "markdown", "plaintext" },
-        snippetSupport = true,
-        preselectSupport = true,
-        insertReplaceSupport = true,
-        labelDetailsSupport = true,
-        commitCharactersSupport = true,
-        tagSupport = { valueSet = { 1 } },
-        resolveSupport = {
-            properties = {
-                "detail",
-                "documentation",
-                "additionalTextEdits"
-            }
-        },
-        insertTextModeSupport =  {
-            valueSet = { 1, 2 }
-        },
-        contextSupport = true
-    }
+    contextSupport = true, 
+}
+-- base completion completionItem
+CAP.capabilities.textDocument.completion.completionItem = {
+    tagSupport = { valueSet = { 1 } },
+    snippetSupport = true,
+    resolveSupport = {
+        properties = { "detail", "documentation", "additionalTextEdits" }
+    },
+    preselectSupport = true,
+    deprecatedSupport = true,
+    labelDetailsSupport = true,
+    documentationFormat = { "markdown", "plaintext" },
+    insertReplaceSupport = true,
+    insertTextModeSupport = {
+        valueSet = { 1, 2 }
+    },
+    commitCharactersSupport = true,
 }
 
 ---

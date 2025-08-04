@@ -50,7 +50,8 @@ for _, lsp in pairs(LSPS) do
                     version = "LuaJIT",
                     path = {
                         "lua/?.lua",
-                        "lua/?/init.lua"
+                        "lua/?/init.lua",
+                        vim.fn.stdpath"config" .. "/lua"
                     }
                 },
                 workspace = {
@@ -58,7 +59,8 @@ for _, lsp in pairs(LSPS) do
                         "lua",
                         vim.env.VIMRUNTIME,
                         "${3rd}/luv/library",
-                        vim.fn.expand "$VIMRUNTIME/lua"
+                        vim.fn.expand "$VIMRUNTIME/lua",
+                        vim.fn.stdpath"config" .. "/lua"
                     },
                     checkThirdParty = true
                 },
@@ -121,6 +123,21 @@ vim.api.nvim_create_autocmd("InsertCharPre", {
         end
     end
 })
+
+-- -- do something on TextChangedI TextChangedP
+-- vim.api.nvim_create_autocmd({"TextChangedI", "TextChangedP"}, {
+--     callback = function()
+--         if vim.fn.pumvisible() == 0 then
+--             vim.fn.complete(
+--                 vim.fn.col(".") - 1, vim.fn.getline("."):match("%w+$")
+--                 and
+--                 vim.fn.getcompletion(vim.fn.getline("."):match("%w+$"), "buffer")
+--                 or
+--                 {}
+--             )
+--         end
+--     end
+-- })
 
 -- finally
 vim.lsp.enable(LSPS)
