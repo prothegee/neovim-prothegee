@@ -15,14 +15,14 @@ require"nvim-prt.cmdc".setup({
         [_prt.cmake.preset_select_hint] = function()
             _prt.cmake.preset_select()
         end,
+        [_prt.cmake.project_clean_hint] = function()
+            _prt.cmake.project_clean()
+        end,
         [_prt.cmake.project_configure_hint] = function()
             _prt.cmake.project_configure()
         end,
         [_prt.cmake.project_configure_build_hint] = function()
             _prt.cmake.project_configure_build()
-        end,
-        [_prt.cmake.project_clean_hint] = function()
-            _prt.cmake.project_clean()
         end,
     }
 })
