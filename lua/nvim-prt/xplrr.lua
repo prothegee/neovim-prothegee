@@ -561,6 +561,10 @@ local function create_window(mode)
     update_display()
     vim.api.nvim_command("startinsert")
     vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+
+    vim.schedule(function()
+        vim.notify("XPLRR: press ctrl+q to exit")
+    end)
 end
 
 ---
