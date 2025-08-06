@@ -371,23 +371,132 @@ end
 
 NVIM_CMAKE.project_configure_hint = "NvimCmake: Project Configure"
 function NVIM_CMAKE.project_configure()
-    print("TODO: NVIM_CMAKE.project_configure")
+    local _prt = {
+        nvim = require"nvim-prt.tools.nvim"
+    }
+
+    local preset = get_cmake_preset_data()
+
+    if preset == nil then
+        vim.notify("preset error", vim.log.levels.ERROR)
+        return
+    end
+
+    local cache_vars = {}
+
+    if not preset.cacheVariables then
+        vim.notify("preset cacheVariables error", vim.log.levels.ERROR)
+        return
+    end
+
+    for key, val in pairs(preset.cacheVariables) do
+        table.insert(cache_vars, string.format("-D%s=%s", key, tostring(val)))
+    end
+
+    local binary_dir = preset.binaryDir:gsub("${sourceDir}", vim.fn.getcwd())
+
+    local cmake_cmd = string.format(
+        "cmake -G\"%s\" -S\"%s\" -B\"%s\" %s",
+        preset.generator,
+        vim.fn.getcwd(),
+        binary_dir,
+        table.concat(cache_vars, " ")
+    )
+
+    _prt.nvim.create_terminal(cmake_cmd, "NvimCmake: Project Configure, Succeed", "NvimCmake: Project Configure, Failed", 0.3)
 end
 
 NVIM_CMAKE.project_configure_build_hint = "NvimCmake: Project Configure Build"
 function NVIM_CMAKE.project_configure_build()
-    print("TODO: NVIM_CMAKE.project_configure_build")
+    local _prt = {
+        _ = require"nvim-prt",
+        nvim = require"nvim-prt.tools.nvim"
+    }
+
+    local preset = get_cmake_preset_data()
+
+    if preset == nil then
+        vim.notify("preset error", vim.log.levels.ERROR)
+        return
+    end
+
+    local cache_vars = {}
+
+    if not preset.cacheVariables then
+        vim.notify("preset cacheVariables error", vim.log.levels.ERROR)
+        return
+    end
+
+    for key, val in pairs(preset.cacheVariables) do
+        table.insert(cache_vars, string.format("-D%s=%s", key, tostring(val)))
+    end
+
+    local binary_dir = preset.binaryDir:gsub("${sourceDir}", vim.fn.getcwd())
+
+    local symlink = function()
+        if _prt.nvim.os.windows then
+            return string.format("mklink %s/%s; ", binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
+        else
+            return string.format("ln -s %s/%s; ", binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
+        end
+    end
+
+    local cmake_cmd = string.format(
+        "%scmake --build \"%s\"",
+        symlink(),
+        binary_dir
+    )
+
+    _prt.nvim.create_terminal(cmake_cmd, "NvimCmake: Project Configure Build, Succeed", "NvimCmake: Project Configure Build, Failed", 0.3)
 end
 
 ---
 
 NVIM_CMAKE.cmd = {
-    preset_init = "NvimCmakePresetInit",
-    preset_select = "NvimCmakePresetSelect",
-    project_clean = "NvimCmakeProjectClean",
-    project_configure = "NvimCmakeProjectConfigure",
-    project_configure_build = "NvimCmakeProjectConfigureBuild",
+    nvim_cmake_preset_init = "NvimCmakePresetInit",
+    nvim_cmake_preset_select = "NvimCmakePresetSelect",
+    nvim_cmake_project_clean = "NvimCmakeProjectClean",
+    nvim_cmake_project_configure = "NvimCmakeProjectConfigure",
+    nvim_cmake_project_configure_build = "NvimCmakeProjectConfigureBuild",
 }
+
+---
+
+vim.api.nvim_create_user_command(
+    NVIM_CMAKE.cmd.nvim_cmake_preset_init,
+    NVIM_CMAKE.preset_init,
+    {
+        desc = NVIM_CMAKE.preset_init_hint
+    }
+)
+vim.api.nvim_create_user_command(
+    NVIM_CMAKE.cmd.nvim_cmake_preset_select,
+    NVIM_CMAKE.preset_select,
+    {
+        desc = NVIM_CMAKE.preset_select_hint
+    }
+)
+vim.api.nvim_create_user_command(
+    NVIM_CMAKE.cmd.nvim_cmake_project_clean,
+    NVIM_CMAKE.project_clean,
+    {
+        desc = NVIM_CMAKE.project_clean_hint
+    }
+)
+vim.api.nvim_create_user_command(
+    NVIM_CMAKE.cmd.nvim_cmake_project_configure,
+    NVIM_CMAKE.project_configure,
+    {
+        desc = NVIM_CMAKE.preset_configure_hint
+    }
+)
+vim.api.nvim_create_user_command(
+    NVIM_CMAKE.cmd.nvim_cmake_project_configure_build,
+    NVIM_CMAKE.project_configure_build,
+    {
+        desc = NVIM_CMAKE.project_configure_build_hint
+    }
+)
 
 ---
 
