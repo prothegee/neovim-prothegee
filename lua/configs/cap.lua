@@ -2,25 +2,25 @@ local CAP = {}
 
 ---
 
-local _buf_default_completion = function(bufnum)
+local _buf_default_completion = function(buffer)
     -- https://neovim.io/doc/user/options.html#'completeopt'
-    vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
+    vim.opt.completeopt = { "menu", "menuone", "noinsert", --[["noselect"]] }
 end
 
-local _buf_helper_completion = function(bufnum, ...)
-    vim.api.nvim_buf_set_keymap(bufnum, ...)
+local _buf_helper_completion = function(buffer, ...)
+    vim.api.nvim_buf_set_keymap(buffer, ...)
 end
 
-local _completion_trigger = function(client, bufnum)
+local _completion_trigger = function(client, buffer)
     vim.opt.shortmess:append("c")
-    vim.bo[bufnum].omnifunc = "v:lua.vim.lsp.omnifunc"
+    vim.bo[buffer].omnifunc = "v:lua.vim.lsp.omnifunc"
 
-    _buf_default_completion(bufnum)
+    _buf_default_completion(buffer)
 
     -- mode: insert
     -- trigger by using ctrl+space
     _buf_helper_completion(
-        bufnum,
+        buffer,
         "i", "<C-space>",
         "<C-x><C-o>",
         {
@@ -37,7 +37,7 @@ end
 CAP.capabilities = vim.lsp.protocol.make_client_capabilities()
 -- base completion
 CAP.capabilities.textDocument.completion = {
-    contextSupport = true, 
+    contextSupport = true,
 }
 -- base completion completionItem
 CAP.capabilities.textDocument.completion.completionItem = {
@@ -60,20 +60,20 @@ CAP.capabilities.textDocument.completion.completionItem = {
 ---
 
 -- on init
-function CAP.on_init(client, bufnum)
+function CAP.on_init(client, buffer)
     if client:supports_method("textDocument/semanticTokens") then
         client.server_capabilities.semanticTokensProvider = nil
     end
 end
 
 -- on attach
-function CAP.on_attach(client, bufnum)
-    _completion_trigger(client, bufnum)
+function CAP.on_attach(client, buffer)
+    _completion_trigger(client, buffer)
 end
 
 -- default completion
-function CAP.default_completion(bufnum)
-    _buf_default_completion(bufnum)
+function CAP.default_completion(buffer)
+    _buf_default_completion(buffer)
 end
 
 ---
