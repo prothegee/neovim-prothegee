@@ -434,10 +434,28 @@ function NVIM_CMAKE.project_configure_build()
     local binary_dir = preset.binaryDir:gsub("${sourceDir}", vim.fn.getcwd())
 
     local symlink = function()
+        local symlinkdel1, symlinkdel2 = "", ""
+        local compile_commands_dir_file = vim.fn.getcwd() .. "/" .. binary_dir .. "/" .. NVIM_CMAKE.file.cmake_compile_commands_json
+        local compile_commands_root_file = vim.fn.getcwd() .. "/" .. NVIM_CMAKE.file.cmake_compile_commands_json
+
         if _prt.nvim.os.windows then
-            return string.format("mklink %s/%s; ", binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
+            if io.open(vim.fn.getcwd() .. "/" .. compile_commands_dir_file, "r") ~= nil then
+                symlinkdel1 = "del /f /q " .. compile_commands_dir_file .. ";"
+            end
+            if io.open(vim.fn.getcwd() .. "/" .. compile_commands_root_file, "r") ~= nil then
+                symlinkdel2 = "del /f /q " .. compile_commands_root_file .. ";"
+            end
+
+            return string.format("%s%smklink %s/%s; ", symlinkdel1, symlinkdel2, binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
         else
-            return string.format("ln -s %s/%s; ", binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
+            if io.open(vim.fn.getcwd() .. "/" .. compile_commands_dir_file, "r") ~= nil then
+                symlinkdel1 = "rm -rf " .. compile_commands_dir_file .. ";"
+            end
+            if io.open(vim.fn.getcwd() .. "/" .. compile_commands_root_file, "r") ~= nil then
+                symlinkdel2 = "rm -rf " .. compile_commands_root_file .. ";"
+            end
+
+            return string.format("ln -s %s/%s; ", symlinkdel1, symlinkdel2, binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
         end
     end
 
