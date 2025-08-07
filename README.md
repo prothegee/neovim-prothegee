@@ -8,9 +8,25 @@ __*NOTE:*__
 
 <br>
 
-###
+## note
 
-* check this [file](./lua/settings/lsps/init.lua)
+* check this [file](./lua/settings/lsps/init.lua) for lsp/s
+* configured for:
+    - c, cpp, cmake
+
+<br>
+
+## modules
+
+* [cmdc](./lua/nvim-prt/cmdc.lua)
+* [dbgr](./lua/nvim-prt/dbgr.lua)
+* [xplrr](./lua/nvim-prt/xplrr.lua)
+
+<br>
+
+## tools
+
+
 
 <br>
 
