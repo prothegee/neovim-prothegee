@@ -5,9 +5,9 @@ local XPLRR = {}
 local config = {
     hidden = true,
     follow_symlinks = false,
-    max_results = 256,
+    max_results = 1024,
     border = "rounded",
-    highlight_ns = vim.api.nvim_create_namespace("XplrrHighlight"),
+    highlight_ns = vim.api.nvim_create_namespace("XPLRR_HL"),
 }
 
 -- state management

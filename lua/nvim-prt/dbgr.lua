@@ -1,54 +1,129 @@
 -- ~/.config/nvim/lua/nvim-prt/dbgr.lua
 local DBGR = {}
 
+---
+
+DBGR.template = {
+    dot_nvim_launch_json_content = [[
+{
+    "version": "0.2.0",
+    "configurations": [
+        // {
+        //     "name": "Cpp Sample",
+        //     "type": "cpp",
+        //     "program": "${workspaceFolder}/build/debug/app_cpp",
+        //     "debugger": "gdb"
+        // },
+        // {
+        //     "name": "Rust Example",
+        //     "type": "rust",
+        //     "program": "${workspaceFolder}/target/debug/app_rust",
+        //     "debugger": "lldb"
+        // },
+        // {
+        //     "name": "Node Example",
+        //     "type": "node",
+        //     "program": "${workspaceFolder}/app_javascript.js",
+        //     "debugger": "node"
+        // }
+    ],
+    "compounds": [
+        {
+            "name": "Full System",
+            "configurations": [
+                // "Cpp Sample", "Rust Example", "Node Example"
+            ]
+        }
+    ]
+}
+    ]]
+}
+
+---
+
 local session = {
     active_sessions = {},
     breakpoints = {},
     configs = nil
 }
 
+local keymaps = {}
+
 -- debug control functions
-local function send_gdb_command(job_id, command)
+local function send_debugger_command(job_id, command)
     if job_id and vim.fn.jobwait({job_id}, 0)[1] == -1 then
         vim.api.nvim_chan_send(job_id, command .. "\n")
     end
 end
 
-local function set_debug_keymaps(buf, job_id)
+local function set_debug_keymaps(buf, job_id, debugger_type)
     -- buffer-local keymaps for debug controls
     local map = function(mode, lhs, rhs, desc)
         vim.keymap.set(mode, lhs, rhs, {buffer = buf, desc = desc})
     end
 
+    -- determine commands based on debugger type
+    local continue_cmd = "continue"
+    local step_over_cmd = "next"
+    local step_into_cmd = "step"
+    local step_out_cmd = "finish"
+    local exit_cmd = "exit"
+
+    if debugger_type == "gdb" then
+        -- gdb commands
+        continue_cmd = "continue"
+        step_over_cmd = "next"
+        step_into_cmd = "step"
+        step_out_cmd = "finish"
+        exit_cmd = "exit"
+    elseif debugger_type == "lldb" then
+        -- lldb commands
+        continue_cmd = "continue"
+        step_over_cmd = "next"
+        step_into_cmd = "step"
+        step_out_cmd = "finish"
+        exit_cmd = "exit"
+    elseif debugger_type == "node" then
+        -- node inspect commands
+        continue_cmd = "cont"
+        step_over_cmd = "next"
+        step_into_cmd = "step"
+        step_out_cmd = "out"
+        exit_cmd = "exit"
+    end
+
     -- navigation controls
-    map("n", "<F5>", function() send_gdb_command(job_id, "continue") end, "continue")
-    map("n", "<F10>", function() send_gdb_command(job_id, "next") end, "step over")
-    map("n", "<F11>", function() send_gdb_command(job_id, "step") end, "step into")
-    map("n", "<F12>", function() send_gdb_command(job_id, "finish") end, "step out")
-    map("n", "<F9>", function() send_gdb_command(job_id, "until") end, "run to cursor")
+    map("n", "<F5>", function() send_debugger_command(job_id, continue_cmd) end, "continue")
+    map("n", "<F10>", function() send_debugger_command(job_id, step_over_cmd) end, "step over")
+    map("n", "<F11>", function() send_debugger_command(job_id, step_into_cmd) end, "step into")
+    map("n", "<F12>", function() send_debugger_command(job_id, step_out_cmd) end, "step out")
+    map("n", "<F9>", function() send_debugger_command(job_id, "until") end, "run to cursor")
+    map("n", "<S-F5>", function() send_debugger_command(job_id, exit_cmd) end, "exit debuger")
 
-    -- inspection commands
-    map("n", "<leader>dp", function()
-        local word = vim.fn.expand("<cword>")
-        if word ~= "" then
-            send_gdb_command(job_id, "print " .. word)
-        end
-    end, "print variable")
-
-    map("n", "<leader>db", DBGR.toggle_breakpoint, "toggle breakpoint")
-    map("n", "<leader>dB", function()
-        local line = vim.fn.line(".")
-        local file = vim.fn.expand("%:p")
-        send_gdb_command(job_id, "break " .. file .. ":" .. line)
-    end, "set breakpoint at line")
-
-    -- session controls
-    map("n", "<leader>dq", function() DBGR.stop_debugging("all") end, "stop debug")
-    map("n", "<leader>dr", function() send_gdb_command(job_id, "run") end, "restart debug")
+    -- -- inspection commands
+    -- -- TODO: need setup
+    -- map("n", "<leader>dp", function()
+    --     local word = vim.fn.expand("<cword>")
+    --     if word ~= "" then
+    --         send_debugger_command(job_id, "print " .. word)
+    --     end
+    -- end, "print variable")
+    --
+    -- map("n", "<leader>db", DBGR.toggle_breakpoint, "toggle breakpoint")
+    -- map("n", "<leader>dB", function()
+    --     local line = vim.fn.line(".")
+    --     local file = vim.fn.expand("%:p")
+    --     send_debugger_command(job_id, "break " .. file .. ":" .. line)
+    -- end, "set breakpoint at line")
+    --
+    -- -- session controls
+    -- map("n", "<leader>dq", function() DBGR.stop_debugging("all") end, "stop debug")
+    -- map("n", "<leader>dr", function() send_debugger_command(job_id, "run") end, "restart debug")
+    -- map("n", "<leader>de", function() send_debugger_command(job_id, exit_cmd) end, "exit debug")
 end
 
 local function find_project_root()
-    local markers = { ".git", "Makefile", "package.json", "CMakeLists.txt" }
+    local markers = { ".git", "Makefile", "package.json", "CMakeLists.txt", "Cargo.toml" }
     local path = vim.fn.expand("%:p:h")
 
     for _, marker in ipairs(markers) do
@@ -96,31 +171,40 @@ local function execute_command(config)
         end
     end
 
-    -- create gdb command file with breakpoints
-    local gdb_commands = {"run"}
+    -- create debugger command file with breakpoints
+    local debugger_commands = {"run"}
     for _, bp in ipairs(session.breakpoints) do
-        table.insert(gdb_commands, 1, ("break %s:%d"):format(bp.file, bp.line))
+        table.insert(debugger_commands, 1, ("break %s:%d"):format(bp.file, bp.line))
     end
 
-    local gdb_script_path = os.tmpname() .. ".gdb"
-    local gdb_script = table.concat(gdb_commands, "\n")
-    local f = io.open(gdb_script_path, "w")
+    local script_path = os.tmpname() .. ".dbg"
+    local script_content = table.concat(debugger_commands, "\n")
+    local f = io.open(script_path, "w")
     if f then
-        f:write(gdb_script)
+        f:write(script_content)
         f:close()
     else
-        vim.notify("failed to create gdb script", vim.log.levels.ERROR)
+        vim.notify("failed to create debugger script", vim.log.levels.ERROR)
         return
     end
 
-    -- build gdb command
-    local gdb_cmd = string.format("%s -q -x %s --args %s %s",
-        debugger, gdb_script_path, cmd, table.concat(args, " "))
+    -- build debugger command based on type
+    local debugger_cmd
+    if debugger == "lldb" then
+        debugger_cmd = string.format("lldb -s %s -- %s %s",
+            script_path, cmd, table.concat(args, " "))
+    elseif debugger == "node" then
+        debugger_cmd = string.format("node inspect %s %s",
+            cmd, table.concat(args, " "))
+    else  -- gdb
+        debugger_cmd = string.format("gdb -q -x %s --args %s %s",
+            script_path, cmd, table.concat(args, " "))
+    end
 
     -- create terminal
     vim.cmd("belowright split")
     vim.cmd("resize 15")
-    vim.cmd("terminal " .. env_vars .. gdb_cmd)
+    vim.cmd("terminal " .. env_vars .. debugger_cmd)
 
     local buf = vim.api.nvim_get_current_buf()
     local job_id = vim.b.terminal_job_id
@@ -131,7 +215,7 @@ local function execute_command(config)
     vim.cmd("setlocal nobuflisted")
 
     -- set keymaps for debug control
-    set_debug_keymaps(buf, job_id)
+    set_debug_keymaps(buf, job_id, debugger)
 
     -- track session
     session.active_sessions[job_id] = {
@@ -140,7 +224,8 @@ local function execute_command(config)
         job_id = job_id,
         buf = buf,
         config = config,
-        gdb_script = gdb_script_path
+        debugger_script = script_path,
+        debugger_type = debugger
     }
 
     return job_id
@@ -203,6 +288,38 @@ end
 
 ---
 
+function DBGR.init_launch()
+    local _prt = {
+        nvim = require"nvim-prt.tools.nvim"
+    }
+
+    _prt.nvim.initialize()
+
+    local destination = vim.fn.getcwd() .. "/.nvim/launch.json"
+
+    if vim.uv.fs_stat(destination) then
+        vim.notify(destination .. " already exists", vim.log.levels.INFO)
+        return
+    end
+
+    local file = io.open(destination, "w")
+
+    if not file then
+        vim.notify("failed to open " .. destination, vim.log.levels.ERROR)
+        return
+    end
+
+    if not file:write(DBGR.template.dot_nvim_launch_json_content) then
+        vim.notify("failed to write " .. destination, vim.log.levels.ERROR)
+        return
+    end
+
+    if not file:close() then
+        vim.notify("failed to close " .. destination, vim.log.levels.ERROR)
+        return
+    end
+end
+
 function DBGR.start_debugging(name)
     local configs = parse_launch_config()
     if not configs then return end
@@ -232,9 +349,9 @@ function DBGR.stop_debugging(name)
     if name == "all" then
         for job_id, sess in pairs(session.active_sessions) do
             vim.fn.jobstop(job_id)
-            -- clean up gdb script
-            if sess.gdb_script and vim.fn.filereadable(sess.gdb_script) == 1 then
-                os.remove(sess.gdb_script)
+            -- clean up debugger script
+            if sess.debugger_script and vim.fn.filereadable(sess.debugger_script) == 1 then
+                os.remove(sess.debugger_script)
             end
         end
         session.active_sessions = {}
@@ -246,9 +363,9 @@ function DBGR.stop_debugging(name)
     for job_id, sess in pairs(session.active_sessions) do
         if tostring(sess.id) == name or sess.name == name then
             vim.fn.jobstop(job_id)
-            -- clean up gdb script
-            if sess.gdb_script and vim.fn.filereadable(sess.gdb_script) == 1 then
-                os.remove(sess.gdb_script)
+            -- clean up debugger script
+            if sess.debugger_script and vim.fn.filereadable(sess.debugger_script) == 1 then
+                os.remove(sess.debugger_script)
             end
             session.active_sessions[job_id] = nil
             vim.notify("stopped debug session: " .. sess.name, vim.log.levels.INFO)
@@ -309,18 +426,98 @@ function DBGR.list_sessions()
     vim.api.nvim_echo({ { table.concat(lines, "\n") } }, false, {})
 end
 
+-- new debug control functions
+function DBGR.sessions_continue(session_id)
+    local sess = session_id and DBGR.get_session(session_id) or DBGR.get_current_session()
+    if sess then
+        send_debugger_command(sess.job_id, "continue")
+    else
+        vim.notify("no active debug session found", vim.log.levels.WARN)
+    end
+end
+
+function DBGR.sessions_step_over(session_id)
+    local sess = session_id and DBGR.get_session(session_id) or DBGR.get_current_session()
+    if sess then
+        send_debugger_command(sess.job_id, "next")
+    else
+        vim.notify("no active debug session found", vim.log.levels.WARN)
+    end
+end
+
+function DBGR.sessions_step_into(session_id)
+    local sess = session_id and DBGR.get_session(session_id) or DBGR.get_current_session()
+    if sess then
+        send_debugger_command(sess.job_id, "step")
+    else
+        vim.notify("no active debug session found", vim.log.levels.WARN)
+    end
+end
+
+function DBGR.sessions_step_out(session_id)
+    local sess = session_id and DBGR.get_session(session_id) or DBGR.get_current_session()
+    if sess then
+        send_debugger_command(sess.job_id, "finish")
+    else
+        vim.notify("no active debug session found", vim.log.levels.WARN)
+    end
+end
+
+function DBGR.session_exit(session_id)
+    local sess = session_id and DBGR.get_session(session_id) or DBGR.get_current_session()
+    if sess then
+        send_debugger_command(sess.job_id, "exit")
+    else
+        vim.notify("no active debug session found", vim.log.levels.WARN)
+    end
+end
+
+-- helper functions for session management
+function DBGR.get_session(session_id)
+    for _, sess in pairs(session.active_sessions) do
+        if tostring(sess.id) == session_id or sess.name == session_id then
+            return sess
+        end
+    end
+    return nil
+end
+
+function DBGR.get_current_session()
+    local buf = vim.api.nvim_get_current_buf()
+    for _, sess in pairs(session.active_sessions) do
+        if sess.buf == buf then
+            return sess
+        end
+    end
+    -- return first session if current buffer not found
+    for _, sess in pairs(session.active_sessions) do
+        return sess
+    end
+    return nil
+end
+
 ---
 
 DBGR.cmd = {
-    dbgr_start = "DbgrStart",
     dbgr_stop = "DbgrStop",
+    dbgr_start = "DbgrStart",
     dbgr_list_sessions = "DbgrListSessions",
     dbgr_toggle_breakpoint = "DbgrToggleBreakpoint",
+
+    dbgr_init_launch = "DbgrInitLaunch",
+
+    dbgr_sessions_exit = "DbgrSessionsExit",
+    dbgr_sessions_continue = "DbgrSessionsContinue",
+    dbgr_sessions_step_out = "DbgrSessionsStepOut",
+    dbgr_sessions_step_over = "DbgrSessionsStepOver",
+    dbgr_sessions_step_into = "DbgrSessionsStepInto",
 }
 
 ---
 
-function DBGR.setup()
+function DBGR.setup(opts)
+    opts = opts or {}
+
     -- define breakpoint sign once
     vim.fn.sign_define("debug_bp", {
         text = "",
@@ -365,16 +562,39 @@ function DBGR.setup()
     vim.api.nvim_create_user_command(DBGR.cmd.dbgr_list_sessions, DBGR.list_sessions, {})
     vim.api.nvim_create_user_command(DBGR.cmd.dbgr_toggle_breakpoint, DBGR.toggle_breakpoint, {})
 
-    -- set key mappings (tmp unused)
-    vim.keymap.set("n", "<leader>db", DBGR.toggle_breakpoint, { desc = "toggle breakpoint" })
-    vim.keymap.set("n", "<leader>ds", function()
-        vim.ui.input({prompt = "debug config: "}, function(input)
-                if input then DBGR.start_debugging(input) end
-            end)
-        end,
-    { desc = "start debug session" })
-    vim.keymap.set("n", "<leader>dl", DBGR.list_sessions, { desc = "list sessions" })
-    vim.keymap.set("n", "<leader>dq", function() DBGR.stop_debugging("all") end, { desc = "stop all debug" })
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_init_launch, DBGR.init_launch, {})
+
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_sessions_continue, function(options)
+        DBGR.sessions_continue(options.args)
+    end, { nargs = "?" })
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_sessions_step_over, function(options)
+        DBGR.sessions_step_over(options.args)
+    end, { nargs = "?" })
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_sessions_step_into, function(options)
+        DBGR.sessions_step_into(options.args)
+    end, { nargs = "?" })
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_sessions_step_out, function(options)
+        DBGR.sessions_step_out(options.args)
+    end, { nargs = "?" })
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_sessions_exit, function(options)
+        DBGR.session_exit(options.args)
+    end, { nargs = "?" })
+
+    if next(opts) ~= nil then
+        print("TODO: do something with this setup")
+    end
+
+    -- -- set key mappings
+    -- -- TODO: need setup
+    -- vim.keymap.set("n", "<leader>dt", DBGR.toggle_breakpoint, { desc = "toggle breakpoint" })
+    -- vim.keymap.set("n", "<leader>ds", function()
+    --     vim.ui.input({prompt = "debug config: "}, function(input)
+    --             if input then DBGR.start_debugging(input) end
+    --         end)
+    --     end,
+    -- { desc = "start debug session" })
+    -- vim.keymap.set("n", "<leader>dl", DBGR.list_sessions, { desc = "list sessions" })
+    -- vim.keymap.set("n", "<leader>dq", function() DBGR.stop_debugging("all") end, { desc = "stop all debug" })
 end
 
 ---

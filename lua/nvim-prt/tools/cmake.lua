@@ -39,17 +39,17 @@ local function set_dot_nvim_cmake_json()
     local file = io.open(destination, "w")
 
     if not file then
-        vim.print("failed to open " .. destination, vim.log.levels.ERROR)
+        vim.notify("failed to open " .. destination, vim.log.levels.ERROR)
         return
     end
 
     if not file:write(NVIM_CMAKE.template.nvim_cmake_json_content) then
-        vim.notify("fail to write " .. destination, vim.log.levels.ERROR)
+        vim.notify("failed to write " .. destination, vim.log.levels.ERROR)
         return
     end
 
     if not file:close() then
-        vim.notify("fail to close ".. destination, vim.log.levels.ERROR)
+        vim.notify("failed to close ".. destination, vim.log.levels.ERROR)
         return
     end
 end
