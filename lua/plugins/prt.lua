@@ -1,13 +1,14 @@
 local _prt = {
     _ = require"nvim-prt",
+
+    cmdc = require"nvim-prt.cmdc",
+    dbgr = require"nvim-prt.dbgr",
+    xplrr = require"nvim-prt.xplrr",
+
     cmake = require"nvim-prt.tools.cmake"
 }
 
-_prt._.setup({
-    default = true
-})
-
-require"nvim-prt.cmdc".setup({
+_prt.cmdc.setup({
     commands = {
         [_prt.cmake.preset_init_hint] = function()
             _prt.cmake.preset_init()
@@ -26,3 +27,7 @@ require"nvim-prt.cmdc".setup({
         end,
     }
 })
+
+_prt.dbgr.setup()
+
+_prt.xplrr.setup()

@@ -8,6 +8,24 @@ NVIM.os = {
 
 ---
 
+function NVIM.dir_exists(dirname)
+    return vim.fn.isdirectory(dirname) == 1
+end
+
+---
+
+function NVIM.file_exists(filename)
+    local file = io.open(filename, "r")
+    if file then
+        io.close(file)
+        return true
+    else
+        return false
+    end
+end
+
+---
+
 -- # initialize .nvim
 function NVIM.initialize()
     local target = vim.fn.getcwd() .. "/.nvim"
@@ -17,6 +35,7 @@ function NVIM.initialize()
     end
 end
 
+-- # create bottom log terminal
 function NVIM.create_terminal(command, message_ok, message_error, height_percentage)
     height_percentage = height_percentage or 0.3
 
@@ -113,7 +132,7 @@ function NVIM.create_terminal(command, message_ok, message_error, height_percent
     }
 end
 
--- # create terminal
+-- # create floating terminal
 -- ---
 -- # params
 -- * @param command {string} - command object to pass

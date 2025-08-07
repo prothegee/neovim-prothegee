@@ -597,19 +597,23 @@ end
 
 ---
 
-vim.api.nvim_create_user_command(
-    XPLRR.cmd.xplrr_files,
-    XPLRR.toggle_files,
-    {
-        desc = "XPLRR: search all files (including hidden files)"
-    }
-)
-vim.api.nvim_create_user_command(
-    XPLRR.cmd.xplrr_buffers,
-    XPLRR.toggle_buffers,
-    {
-        desc = "XPLRR: search all opened buffers"
-    }
-)
+function XPLRR.setup()
+    vim.api.nvim_create_user_command(
+        XPLRR.cmd.xplrr_files,
+        XPLRR.toggle_files,
+        {
+            desc = "XPLRR: search all files (including hidden files)"
+        }
+    )
+    vim.api.nvim_create_user_command(
+        XPLRR.cmd.xplrr_buffers,
+        XPLRR.toggle_buffers,
+        {
+            desc = "XPLRR: search all opened buffers"
+        }
+    )
+end
+
+---
 
 return XPLRR
