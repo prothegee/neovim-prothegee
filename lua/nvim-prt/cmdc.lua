@@ -4,8 +4,8 @@ local CMDC = {}
 
 local config = {
     border = "rounded",
-    max_commands = 256,
-    highlight_ns = vim.api.nvim_create_namespace("CMDC"),
+    max_commands = 1024,
+    highlight_ns = vim.api.nvim_create_namespace("CMDC_HL"),
 }
 
 local state = {
