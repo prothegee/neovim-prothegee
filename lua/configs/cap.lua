@@ -1,6 +1,6 @@
 local CAP = {}
 
-local COMPLETION_DELAY = 600
+local COMPLETION_DELAY = 899
 
 ---
 
@@ -81,14 +81,20 @@ function CAP.default_completion(buffer)
 end
 
 function CAP.default_autocmd()
+    --[[
+    NOTE:
+    * problem:
+        - some buffer where it not supported lsp, it throw error of omnifunc
+    --]]
     -- BufEnter
     vim.api.nvim_create_autocmd("BufEnter", {
         pattern = "*",
         callback = function(args)
             local buffer = args.buf
-            local buffname = vim.fn.expand("%")
+            local buffer_name = vim.fn.expand("%")
 
-            if buffname == "" then
+            if not vim.api.nvim_buf_is_valid(buffer) then return end
+            if buffer_name == "" then
                 -- this section can prevent error if buffer is not recoqnized
                 CAP.default_completion(buffer)
             end
@@ -101,9 +107,8 @@ function CAP.default_autocmd()
             local buffer = args.buf
             local buffer_name = vim.api.nvim_buf_get_name(buffer)
 
-            if buffer_name == "" or buffer_name == "No Name" then
-                return
-            end
+            if not vim.api.nvim_buf_is_valid(buffer) then return end
+            if buffer_name == "" then return end
 
             CAP.on_attach(client, buffer)
         end
@@ -114,9 +119,8 @@ function CAP.default_autocmd()
             local buffer = args.buf
             local buffer_name = vim.api.nvim_buf_get_name(buffer)
 
-            if buffer_name == "" or buffer_name == "No Name" then
-                return
-            end
+            if not vim.api.nvim_buf_is_valid(buffer) then return end
+            if buffer_name == "" then return end
 
             if vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
@@ -135,9 +139,8 @@ function CAP.default_autocmd()
             local buffer = args.buf
             local buffer_name = vim.api.nvim_buf_get_name(buffer)
 
-            if buffer_name == "" or buffer_name == "No Name" then
-                return
-            end
+            if not vim.api.nvim_buf_is_valid(buffer) then return end
+            if buffer_name == "" then return end
 
             if vim.fn.pumvisible() == 0 then
                 vim.fn.complete(
