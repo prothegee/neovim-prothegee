@@ -6,7 +6,6 @@ vim.opt.splitkeep = "screen"
 vim.opt.laststatus = 12
 
 vim.opt.number = true
-vim.opt.clipboard = "unnamedplus"
 vim.opt.termguicolors = true
 
 vim.opt.tabstop = 4
@@ -20,3 +19,12 @@ vim.opt.fillchars = { eob = " " }
 vim.opt.whichwrap:append "<>[]hl"
 
 vim.opt.winborder = "rounded"
+
+-- custom clipboard
+--- yank will consistent in insert and normal mode
+vim.opt.clipboard = "unnamedplus"
+vim.keymap.set('n', 'x', '"_x', { noremap = true })
+vim.keymap.set('n', 'X', '"_X', { noremap = true })
+vim.keymap.set('n', 'gp', '"0p')
+vim.keymap.set('n', 'gP', '"0p')
+vim.keymap.set('v', 'gp', '"0p')
