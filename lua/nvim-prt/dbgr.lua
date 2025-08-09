@@ -41,13 +41,41 @@ DBGR.template = {
 
 ---
 
+local maps = {
+    dbgr_run = {},
+    dbgr_stop = {},
+    dbgr_breakpoint = {},
+
+    dbgr_init_launch = {},
+
+    dbgr_sessions_exit = {},
+    dbgr_sessions_list = {},
+    dbgr_sessions_until = {},
+    dbgr_sessions_continue = {},
+    dbgr_sessions_step_out = {},
+    dbgr_sessions_step_over = {},
+    dbgr_sessions_step_into = {},
+}
+
 local session = {
     active_sessions = {},
     breakpoints = {},
     configs = nil
 }
 
-local keymaps = {}
+local until_cmd = "until"
+local continue_cmd = "continue"
+local step_over_cmd = "next"
+local step_into_cmd = "step"
+local step_out_cmd = "finish"
+local exit_cmd = "exit"
+
+---
+
+-- buffer-local keymaps for debug controls
+local map_set = function(mode, lhs, rhs, desc, buf)
+    vim.keymap.set(mode, lhs, rhs, {buffer = buf, desc = desc})
+end
 
 -- debug control functions
 local function send_debugger_command(job_id, command)
@@ -56,21 +84,56 @@ local function send_debugger_command(job_id, command)
     end
 end
 
-local function set_debug_keymaps(buf, job_id, debugger_type)
-    -- buffer-local keymaps for debug controls
-    local map = function(mode, lhs, rhs, desc)
-        vim.keymap.set(mode, lhs, rhs, {buffer = buf, desc = desc})
+-- internal maps_setup after setup opts.maps is passed
+local function maps_setup()
+    if not next(maps) then
+        return
     end
 
-    -- determine commands based on debugger type
-    local continue_cmd = "continue"
-    local step_over_cmd = "next"
-    local step_into_cmd = "step"
-    local step_out_cmd = "finish"
-    local exit_cmd = "exit"
+    --#region dbgr launcher
+    if maps.dbgr_run then
+        vim.keymap.set("n", maps.dbgr_run[1], function()
+            vim.ui.input({prompt = "Debug Config (from .nvim/launch.json): "}, function(input)
+                if input then DBGR.start_debugging(input) end
+            end)
+        end, { desc = maps.dbgr_run[2] })
+    end
+    if maps.dbgr_stop then
+        vim.keymap.set("n", maps.dbgr_stop[1], function()
+            DBGR.stop_debugging("all")
+            -- NOTE:
+            -- * not automatically exit
+            -- * enduser need to enter the terminal again and press "any" key
+            -- * if need to be automatically close, look for the terminal buffer first
+        end, { desc = maps.dbgr_stop[2] })
+    end
+    if maps.dbgr_breakpoint then
+        vim.keymap.set("n", maps.dbgr_breakpoint[1], function()
+            DBGR.toggle_breakpoint()
+        end, { desc = maps.dbgr_breakpoint[2] })
+    end
+    --#endregion
 
+    --#region dbgr init
+    if maps.dbgr_init_launch then
+        vim.keymap.set("n", maps.dbgr_init_launch[1], function()
+            DBGR.init_launch()
+        end, { desc = maps.dbgr_init_launch[2] })
+    end
+    --#endregion
+
+    --#region dbgr debugger session
+    -- go to "navigation controls"
+    --#endregion
+
+    -- notify: what is not set?
+end
+
+-- debug keymap
+local function set_debug_keymaps(buf, job_id, debugger_type)
     if debugger_type == "gdb" then
         -- gdb commands
+        until_cmd = "until"
         continue_cmd = "continue"
         step_over_cmd = "next"
         step_into_cmd = "step"
@@ -78,6 +141,7 @@ local function set_debug_keymaps(buf, job_id, debugger_type)
         exit_cmd = "exit"
     elseif debugger_type == "lldb" then
         -- lldb commands
+        until_cmd = "until"
         continue_cmd = "continue"
         step_over_cmd = "next"
         step_into_cmd = "step"
@@ -85,6 +149,7 @@ local function set_debug_keymaps(buf, job_id, debugger_type)
         exit_cmd = "exit"
     elseif debugger_type == "node" then
         -- node inspect commands
+        until_cmd = "until"
         continue_cmd = "cont"
         step_over_cmd = "next"
         step_into_cmd = "step"
@@ -93,33 +158,26 @@ local function set_debug_keymaps(buf, job_id, debugger_type)
     end
 
     -- navigation controls
-    map("n", "<F5>", function() send_debugger_command(job_id, continue_cmd) end, "continue")
-    map("n", "<F10>", function() send_debugger_command(job_id, step_over_cmd) end, "step over")
-    map("n", "<F11>", function() send_debugger_command(job_id, step_into_cmd) end, "step into")
-    map("n", "<F12>", function() send_debugger_command(job_id, step_out_cmd) end, "step out")
-    map("n", "<F9>", function() send_debugger_command(job_id, "until") end, "run to cursor")
-    map("n", "<S-F5>", function() send_debugger_command(job_id, exit_cmd) end, "exit debuger")
-
-    -- -- inspection commands
-    -- -- TODO: need setup
-    -- map("n", "<leader>dp", function()
-    --     local word = vim.fn.expand("<cword>")
-    --     if word ~= "" then
-    --         send_debugger_command(job_id, "print " .. word)
-    --     end
-    -- end, "print variable")
-    --
-    -- map("n", "<leader>db", DBGR.toggle_breakpoint, "toggle breakpoint")
-    -- map("n", "<leader>dB", function()
-    --     local line = vim.fn.line(".")
-    --     local file = vim.fn.expand("%:p")
-    --     send_debugger_command(job_id, "break " .. file .. ":" .. line)
-    -- end, "set breakpoint at line")
-    --
-    -- -- session controls
-    -- map("n", "<leader>dq", function() DBGR.stop_debugging("all") end, "stop debug")
-    -- map("n", "<leader>dr", function() send_debugger_command(job_id, "run") end, "restart debug")
-    -- map("n", "<leader>de", function() send_debugger_command(job_id, exit_cmd) end, "exit debug")
+    if next(maps) then
+        map_set("n", maps.dbgr_sessions_continue[1], function()
+            send_debugger_command(job_id, continue_cmd)
+        end, maps.dbgr_sessions_continue[2], buf)
+        map_set("n", maps.dbgr_sessions_step_over[1], function()
+            send_debugger_command(job_id, step_over_cmd)
+        end, maps.dbgr_sessions_step_over[2], buf)
+        map_set("n", maps.dbgr_sessions_step_into[1], function()
+            send_debugger_command(job_id, step_into_cmd)
+        end, maps.dbgr_sessions_step_into[2], buf)
+        map_set("n", maps.dbgr_sessions_step_out[1], function()
+            send_debugger_command(job_id, step_out_cmd)
+        end, maps.dbgr_sessions_step_out[2], buf)
+        map_set("n", maps.dbgr_sessions_until[1], function()
+            send_debugger_command(job_id, until_cmd)
+        end, maps.dbgr_sessions_until[2], buf)
+        map_set("n", maps.dbgr_sessions_exit[1], function()
+            send_debugger_command(job_id, exit_cmd)
+        end, maps.dbgr_sessions_exit[2], buf)
+    end
 end
 
 local function find_project_root()
@@ -499,14 +557,14 @@ end
 ---
 
 DBGR.cmd = {
+    dbgr_run = "DbgrRun",
     dbgr_stop = "DbgrStop",
-    dbgr_start = "DbgrStart",
-    dbgr_list_sessions = "DbgrListSessions",
-    dbgr_toggle_breakpoint = "DbgrToggleBreakpoint",
+    dbgr_breakpoint = "DbgrBreakpoint",
 
     dbgr_init_launch = "DbgrInitLaunch",
 
     dbgr_sessions_exit = "DbgrSessionsExit",
+    dbgr_sessions_list = "DbgrSessionsList",
     dbgr_sessions_continue = "DbgrSessionsContinue",
     dbgr_sessions_step_out = "DbgrSessionsStepOut",
     dbgr_sessions_step_over = "DbgrSessionsStepOver",
@@ -526,8 +584,8 @@ function DBGR.setup(opts)
     })
 
     -- create user commands
-    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_start, function(opts)
-        DBGR.start_debugging(opts.args)
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_run, function(options)
+        DBGR.start_debugging(options.args)
     end, {
         nargs = 1,
         complete = function()
@@ -546,8 +604,8 @@ function DBGR.setup(opts)
             return completions
         end
     })
-    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_stop, function(opts)
-        DBGR.stop_debugging(opts.args or "all")
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_stop, function(options)
+        DBGR.stop_debugging(options.args or "all")
     end, {
         nargs = "?",
         complete = function()
@@ -559,8 +617,8 @@ function DBGR.setup(opts)
             return completions
         end
     })
-    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_list_sessions, DBGR.list_sessions, {})
-    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_toggle_breakpoint, DBGR.toggle_breakpoint, {})
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_sessions_list, DBGR.list_sessions, {})
+    vim.api.nvim_create_user_command(DBGR.cmd.dbgr_breakpoint, DBGR.toggle_breakpoint, {})
 
     vim.api.nvim_create_user_command(DBGR.cmd.dbgr_init_launch, DBGR.init_launch, {})
 
@@ -581,20 +639,11 @@ function DBGR.setup(opts)
     end, { nargs = "?" })
 
     if next(opts) ~= nil then
-        print("TODO: do something with this setup")
+        if opts.maps then
+            maps = opts.maps
+            maps_setup()
+        end
     end
-
-    -- -- set key mappings
-    -- -- TODO: need setup
-    -- vim.keymap.set("n", "<leader>dt", DBGR.toggle_breakpoint, { desc = "toggle breakpoint" })
-    -- vim.keymap.set("n", "<leader>ds", function()
-    --     vim.ui.input({prompt = "debug config: "}, function(input)
-    --             if input then DBGR.start_debugging(input) end
-    --         end)
-    --     end,
-    -- { desc = "start debug session" })
-    -- vim.keymap.set("n", "<leader>dl", DBGR.list_sessions, { desc = "list sessions" })
-    -- vim.keymap.set("n", "<leader>dq", function() DBGR.stop_debugging("all") end, { desc = "stop all debug" })
 end
 
 ---
