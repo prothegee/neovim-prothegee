@@ -13,8 +13,6 @@ end
 
 ---
 
-local COMPLETION_DELAY = 300
-
 -- default lsp/s
 local LSPS = {
     "lua_ls",
@@ -85,78 +83,8 @@ for _, lsp in pairs(LSPS) do
     end
 end
 
--- do something when bufenter
-vim.api.nvim_create_autocmd("BufEnter", {
-    pattern = "*",
-    callback = function(args)
-        local buffer = args.buf
-        local buffname = vim.fn.expand("%")
-
-        if buffname == "" then
-            -- this section can prevent error if buffer is not recoqnized
-            _cap.default_completion(buffer)
-        end
-    end
-})
-
--- do something on lsp attach
-vim.api.nvim_create_autocmd("LspAttach", {
-    callback = function(args)
-        local client = vim.lsp.get_client_by_id(args.data.client_id)
-        local buffer = args.buf
-        local buffer_name = vim.api.nvim_buf_get_name(buffer)
-
-        if buffer_name == "" or buffer_name == "No Name" then
-            return
-        end
-
-        _cap.on_attach(client, buffer)
-    end
-})
-
--- do something on typing
-vim.api.nvim_create_autocmd("InsertCharPre", {
-    callback = function(args)
-        local buffer = args.buf
-        local buffer_name = vim.api.nvim_buf_get_name(buffer)
-
-        if buffer_name == "" or buffer_name == "No Name" then
-            return
-        end
-
-        if vim.fn.pumvisible() == 0 then
-            vim.defer_fn(function()
-                if vim.fn.pumvisible() == 0 then
-                    vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        "<C-x><C-o>", true, true, true
-                    ), "n")
-                end
-            end, COMPLETION_DELAY)
-        end
-    end
-})
-
--- do something on TextChangedI TextChangedP
-vim.api.nvim_create_autocmd({"TextChangedI", "TextChangedP"}, {
-    callback = function(args)
-        local buffer = args.buf
-        local buffer_name = vim.api.nvim_buf_get_name(buffer)
-
-        if buffer_name == "" or buffer_name == "No Name" then
-            return
-        end
-
-        if vim.fn.pumvisible() == 0 then
-            vim.fn.complete(
-                vim.fn.col(".") - 1, vim.fn.getline("."):match("%w+$")
-                and
-                vim.fn.getcompletion(vim.fn.getline("."):match("%w+$"), "buffer")
-                or
-                {}
-            )
-        end
-    end
-})
+-- autocmd/s
+_cap.default_autocmd()
 
 -- finally
 vim.lsp.enable(LSPS)
