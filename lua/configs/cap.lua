@@ -1,6 +1,6 @@
 local CAP = {}
 
-local COMPLETION_DELAY = 899
+local COMPLETION_DELAY = 900
 
 ---
 
@@ -80,12 +80,29 @@ function CAP.default_completion(buffer)
     _buf_default_completion(buffer)
 end
 
-function CAP.default_autocmd()
-    --[[
-    NOTE:
-    * problem:
-        - some buffer where it not supported lsp, it throw error of omnifunc
-    --]]
+-- # default auto command
+-- ---
+-- # note
+-- * will reject if current server not supported from supported_lsps param
+function CAP.default_autocmd(supported_lsps)
+    local _prt = {
+        nvim = require"nvim-prt.tools.nvim"
+    }
+
+    local rejected = true
+
+    if next(supported_lsps) then
+        for _, lsp in pairs(supported_lsps) do
+            if lsp == _prt.nvim.get_current_lsp_server_name() then
+                rejected = false
+                break
+            end
+        end
+    end
+
+    -- if lsp name is not supported, do nothing
+    if rejected then return end
+
     -- BufEnter
     vim.api.nvim_create_autocmd("BufEnter", {
         pattern = "*",
