@@ -26,6 +26,19 @@ end
 
 ---
 
+-- # get current lsp server name
+function NVIM.get_current_lsp_server_name()
+    local clients = vim.lsp.get_clients({ bufnr = 0 })
+    if #clients == 0 then return "" end
+    local names = {}
+    for _, client in ipairs(clients) do
+        table.insert(names, client.name)
+    end
+    return table.concat(names, ", ")
+end
+
+---
+
 -- # initialize .nvim
 function NVIM.initialize()
     local target = vim.fn.getcwd() .. "/.nvim"

@@ -1,14 +1,30 @@
 local NVIM_PRT = {}
 
+local version = {
+    major = 0,
+    minor = 0,
+    patch = 0,
+    dates = 20250808,
+}
+
 ---
+
+
+-- actual nvim-prt dir
+NVIM_PRT.dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
+
+NVIM_PRT.version = {
+    major = version.major,
+    minor = version.minor,
+    patch = version.patch,
+    dates = version.dates,
+    strings = string.format("%d.%d.%d.%d", version.major, version.minor, version.patch, version.dates)
+}
 
 -- -- nvim-prt options
 -- NVIM_PRT.options = {
 --     default = false,
 -- }
-
--- actual nvim-prt dir
-NVIM_PRT.dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
 
 ---
 

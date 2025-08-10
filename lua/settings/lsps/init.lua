@@ -84,7 +84,7 @@ for _, lsp in pairs(LSPS) do
 end
 
 -- autocmd/s
-_cap.default_autocmd()
+_cap.default_autocmd(LSPS)
 
 -- finally
 vim.lsp.enable(LSPS)
