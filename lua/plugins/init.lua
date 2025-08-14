@@ -14,7 +14,7 @@ vim.pack.add({
 
 ---
 
--- auto prepend
+-- auto append
 --- vim pack path
 local _path1 = vim.fn.stdpath"data" .. "/site/pack/core/opt"
 for _, path in ipairs(vim.fn.glob(_path1 .. "/*", true, true)) do
@@ -29,7 +29,7 @@ for _, path in ipairs(vim.fn.glob(_path1 .. "/*", true, true)) do
     end
 end
 
--- manual prepend
+-- manual append
 --- nvim-prt
 local _path2 = vim.fn.stdpath"config" .. "/lua/nvim-prt"
 for _, path in ipairs(vim.fn.glob(_path2 .. "/*", true, true)) do
