@@ -17,7 +17,9 @@ local TRIGGER_KIND = 3
 
 local COMPLETION_DELAY = 150 -- in milliseconds
 
--- Custom omnifunc for fuzzy completion
+---
+
+-- custom omnifunc for fuzzy completion
 _G._fuzzy_completion_omnifunc = function(findstart, base)
     if findstart == 1 then
         local line = vim.fn.getline(".")
@@ -35,7 +37,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
         }, function(err, result, _)
             if err or not result then return end
 
-            -- Handle both CompletionList and plain array responses
+            -- handle both completion list and plain array responses
             local items = result.items or result
             if not items then return end
 
@@ -45,7 +47,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
             for _, item in ipairs(items) do
                 local label = item.textEdit and item.textEdit.newText or item.label
                 if label and label:lower():find(base_lower, 1, true) then
-                    -- Get completion item kind information
+                    -- completion item kind information
                     local kind_char = ""
                     local kind_text = ""
 
