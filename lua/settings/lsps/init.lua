@@ -3,16 +3,6 @@ local _lsp = require"lspconfig"
 
 ---
 
--- for available lsp use default
-if vim.lsp.config then
-    vim.lsp.config("*", {
-        on_init = _cap.on_attach,
-        capabilities = _cap.capabilities
-    })
-end
-
----
-
 -- default lsp/s
 local LSPS = {
     "lua_ls",
@@ -75,16 +65,18 @@ for _, lsp in pairs(LSPS) do
         ocap = vim.tbl_deep_extend("force", ocap, opts)
     end
 
-    -- do lsp config, otherwise use lspconfig
-    if vim.lsp.config then
-        vim.lsp.config(lsp, ocap)
-    else
-        _lsp[lsp].setup(ocap)
-    end
+    if _lsp[lsp].setup then _lsp[lsp].setup(ocap) end
+    if vim.lsp.config then vim.lsp.config(lsp, ocap) end
 end
 
--- autocmd/s
-_cap.default_autocmd(LSPS)
+-- default
+vim.lsp.config("*", {
+    on_init = _cap.on_attach,
+    capabilities = _cap.capabilities
+})
 
 -- finally
 vim.lsp.enable(LSPS)
+
+-- autocmd/s
+_cap.default_autocmd(LSPS)
