@@ -21,6 +21,18 @@ local COMPLETION_DELAY = 150 -- in milliseconds
 
 -- custom omnifunc for fuzzy completion
 _G._fuzzy_completion_omnifunc = function(findstart, base)
+    local _snippet = require"configs.snippet"
+
+    --[[
+    NOTE:
+    * current state:
+        - some completion may missing unless explicitly typed
+        - sometimes when selecting and confirm completion, existing keyword might expand
+
+    TODO:
+    * expand snippet from _snippet
+    --]]
+
     if findstart == 1 then
         local line = vim.fn.getline(".")
         local col = vim.fn.col(".")
@@ -29,6 +41,8 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
         local buf = vim.api.nvim_get_current_buf()
         local cursor = vim.api.nvim_win_get_cursor(0)
         local row, col = cursor[1] - 1, cursor[2]
+        local start_char = (vim.fn.getline("."):sub(1, col + 1):find("[%w_]*$") or col + 1) - 1
+        local end_char = col
 
         vim.lsp.buf_request(buf, "textDocument/completion", {
             textDocument = vim.lsp.util.make_text_document_params(),
@@ -43,7 +57,28 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
 
             local matches = {}
             local base_lower = base:lower()
+            local custom_items = {}
 
+            -- adding custom snippet/s
+            for trigger, snippet in pairs(_snippet.get_snippets()) do
+                if trigger:lower():find(base_lower, 1, true) then
+                    table.insert(custom_items, {
+                        word = trigger,
+                        abbr = trigger,
+                        kind = "s",
+                        menu = "Snippet: " .. snippet:gsub("\n", " "):sub(1, 50), -- mark as custom snippet
+                        info = snippet,
+                        icase = 1,
+                        dup = 1,
+                        user_data = {
+                            is_snippet = true,
+                            start_char = start_char
+                        }
+                    })
+                end
+            end
+
+            -- actual completion/s & etc.
             for _, item in ipairs(items) do
                 local label = item.textEdit and item.textEdit.newText or item.label
                 if label and label:lower():find(base_lower, 1, true) then
@@ -56,8 +91,18 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
                         kind_char = kind_text:sub(1, 1):lower()
                     end
 
+                    -- use textEdit range if available, otherwise use calculated range
+                    local word = label
+
+                    if item.textEdit and item.textEdit.range then
+                        local range = item.textEdit.range
+                        start_char = range.start.character
+                        end_char = range["end"].character
+                        word = item.textEdit.newText
+                    end
+
                     table.insert(matches, {
-                        word = label,
+                        word = word,
                         abbr = label:gsub("%b()", ""),
                         kind = kind_char,  -- single character for kind column
                         menu = kind_text,  -- full kind text for right side
@@ -65,11 +110,23 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
                             type(item.documentation) == "string" and item.documentation or
                             (item.documentation.value or "")
                         ) or "",
+                        icase = 1,
+                        dup = 1,
+                        -- add range information for proper replacement
+                        user_data = {
+                            start_char = start_char,
+                            end_char = end_char
+                        }
                     })
                 end
             end
 
-            vim.fn.complete(col - #base + 1, matches)
+            for _, item in ipairs(custom_items) do
+                table.insert(matches, item)
+            end
+
+            -- use the calculated start position for completion
+            vim.fn.complete(start_char + 1, matches)
         end)
 
         return {}
@@ -80,12 +137,12 @@ end
 
 local _buf_default_completion = function(buffer)
     -- https://neovim.io/doc/user/options.html#'completeopt'
-    vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect", "popup" }
+    vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
+    vim.bo[buffer].omnifunc = "v:lua._fuzzy_completion_omnifunc"
 end
 
 local _completion_trigger = function(client, buffer)
     vim.opt.shortmess:append("c")
-    vim.bo[buffer].omnifunc = "v:lua._fuzzy_completion_omnifunc"
 
     _buf_default_completion(buffer)
 
@@ -156,6 +213,7 @@ function CAP.default_autocmd(supported_lsps)
     local _prt = {
         nvim = require"nvim-prt.tools.nvim"
     }
+    local _snippet = require"configs.snippet"
 
     local rejected = true
 
@@ -178,10 +236,9 @@ function CAP.default_autocmd(supported_lsps)
             local buffer_name = vim.fn.expand("%")
 
             if not vim.api.nvim_buf_is_valid(buffer) then return end
-            if buffer_name == "" then
-                -- this section can prevent error if buffer is not recoqnized
-                CAP.default_completion(buffer)
-            end
+
+            -- this section can prevent error if buffer is not recoqnized
+            CAP.default_completion(buffer)
         end
     })
     -- LspAttach
@@ -208,7 +265,7 @@ function CAP.default_autocmd(supported_lsps)
             if not vim.api.nvim_buf_is_valid(buffer) then return end
             if buffer_name == "" then return end
 
-            if vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
+            if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
                         "<C-x><C-o>", true, true, true
@@ -232,11 +289,71 @@ function CAP.default_autocmd(supported_lsps)
                 vim.defer_fn(function()
                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
                         "<cmd>call v:lua._fuzzy_completion_omnifunc(0, '')<CR>", true, true, true
-                        -- "<C-x><C-o>", true, true, true
                     ), "n")
                 end, COMPLETION_DELAY)
             end
         end
+    })
+    -- CompleteDone
+    vim.api.nvim_create_autocmd("CompleteDone", {
+        pattern = "*",
+        callback = function()
+            local completed_item = vim.v.completed_item
+            if not completed_item or not completed_item.user_data or not completed_item.user_data.is_snippet then
+                return
+            end
+
+            local trigger = completed_item.word
+            local snippet = _snippet.get_snippet(trigger)
+            if not snippet then return end
+
+            -- get current cursor position
+            local cursor = vim.api.nvim_win_get_cursor(0)
+            local row = cursor[1] - 1
+            -- local col = cursor[2]
+            local line = vim.api.nvim_get_current_line()
+            local indent = line:match("^%s*") or ""
+
+            -- calculate start position of trigger
+            local start_char = completed_item.user_data.start_char
+            local end_char = start_char + #trigger
+
+            -- get text after trigger
+            local post_text = line:sub(end_char + 1)
+
+            -- split snippet into lines
+            local lines = vim.split(snippet, "\n")
+
+            -- append post_text to last line
+            if #lines > 0 then
+                lines[#lines] = lines[#lines] .. post_text
+            end
+
+            -- apply indentation to new lines
+            if #lines > 1 then
+                for i = 2, #lines do
+                    lines[i] = indent .. lines[i]
+                end
+            end
+
+            -- replace trigger with snippet
+            vim.api.nvim_buf_set_text(0, row, start_char, row, end_char, lines)
+
+            -- find first placeholder position
+            local target_row = row
+            local target_col = 0
+            for i, l in ipairs(lines) do
+                local pos = l:find("%$1")
+                if pos then
+                    target_row = row + i - 1
+                    target_col = pos - 1
+                    break
+                end
+            end
+
+            -- position cursor at placeholder
+            vim.api.nvim_win_set_cursor(0, { target_row + 1, target_col })
+        end,
     })
 end
 
