@@ -26,9 +26,10 @@ vim.diagnostic.config({
         style = "default",
         border = "rounded"
     },
-    virtual_text = {
-        prefix = "●"
-    }
+    -- virtual_text = {
+    --     prefix = "●",
+    -- },
+    -- virtual_lines = true,
 })
 
 -- markdown
