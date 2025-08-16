@@ -1,6 +1,8 @@
 local _prt = {
     _ = require"nvim-prt",
 
+    slr = require"nvim-prt.slr",
+
     cmdc = require"nvim-prt.cmdc",
     dbgr = require"nvim-prt.dbgr",
     xplrr = require"nvim-prt.xplrr",
@@ -47,3 +49,5 @@ _prt.dbgr.setup({
 })
 
 _prt.xplrr.setup()
+
+_prt.slr.setup()
