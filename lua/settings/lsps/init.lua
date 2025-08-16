@@ -71,7 +71,8 @@ end
 
 -- default
 vim.lsp.config("*", {
-    on_init = _cap.on_attach,
+    on_init = _cap.on_init,
+    on_attach = _cap.on_attach,
     capabilities = _cap.capabilities
 })
 
