@@ -2,9 +2,9 @@ local NVIM_PRT = {}
 
 local version = {
     major = 0,
-    minor = 0,
+    minor = 6,
     patch = 0,
-    dates = 20250808,
+    dates = 20250817,
 }
 
 ---
@@ -40,9 +40,7 @@ NVIM_PRT.version = {
 --     end
 --
 --     if opts.default then
---         require"nvim-prt.cmdc"
---         require"nvim-prt.xplrr"
---         require"nvim-prt.dbgr"
+--         -- TODO
 --     end
 -- end
 

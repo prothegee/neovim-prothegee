@@ -1,25 +1,23 @@
-local SNIPPET = {}
+local SNPPTS = {}
+
+---
 
 -- initialize snippets table
-SNIPPET.snippets = {}
+SNPPTS.snippets = {}
 
 ---
 
 -- lua snippet
--- # note
--- * key is to trigger, while string value is to expand
-SNIPPET.snippets.lua = {
-    fori = "for i = 1, var_or_val do\n    -- todo\nend",
-    fori_in_pairs = "for x, y in pairs(z) do\n    -- todo\nend",
-    fori_in_ipairs = "for x, y in ipairs(z) do\n    -- todo\nend",
-    func = "function func_name()\n    -- todo\nend",
-}
+SNPPTS.snippets.lua = require"nvim-prt.snippets.lua"
 -- todo: c snippet
+SNPPTS.snippets.c = require"nvim-prt.snippets.c"
 -- todo: cpp snippet
+SNPPTS.snippets.cpp = require"nvim-prt.snippets.cpp"
 -- todo: cmake snippet
 -- todo: rust snippet
 -- todo: javascript snippet
 -- todo: svelte snippet
+-- todo: html
 
 ---
 
@@ -83,12 +81,13 @@ local function get_snippet_info()
     while start_col > 0 and line:sub(start_col, start_col):match("[%w_]") do
         start_col = start_col - 1
     end
+
     local trigger = line:sub(start_col + 1, col)
     if trigger == "" then return nil end
 
     -- snippet for current filetype
     local ft = vim.bo.filetype
-    local snippet = (SNIPPET.snippets[ft] or {})[trigger] or ""
+    local snippet = (SNPPTS.snippets[ft] or {})[trigger] or ""
     if snippet == "" then return nil end
 
     return {
@@ -103,19 +102,19 @@ end
 
 ---
 
-function SNIPPET.get_snippet(trigger)
+function SNPPTS.get_snippet(trigger)
     local ft = vim.bo.filetype
-    return (SNIPPET.snippets[ft] or {})[trigger]
+    return (SNPPTS.snippets[ft] or {})[trigger]
 end
 
-function SNIPPET.get_snippets()
+function SNPPTS.get_snippets()
     local ft = vim.bo.filetype
-    return SNIPPET.snippets[ft] or {}
+    return SNPPTS.snippets[ft] or {}
 end
 
-function SNIPPET.get_completion_items()
+function SNPPTS.get_completion_items()
     local ft = vim.bo.filetype
-    local snippets = SNIPPET.snippets[ft] or {}
+    local snippets = SNPPTS.snippets[ft] or {}
     local items = {}
 
     for trigger, snippet in pairs(snippets) do
@@ -130,7 +129,7 @@ function SNIPPET.get_completion_items()
     return items
 end
 
-function SNIPPET.expand_snippet()
+function SNPPTS.expand_snippet()
     local info = get_snippet_info()
     if not info then return false end
 
@@ -144,4 +143,4 @@ end
 
 ---
 
-return SNIPPET
+return SNPPTS
