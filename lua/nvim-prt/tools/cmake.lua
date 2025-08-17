@@ -12,10 +12,10 @@ NVIM_CMAKE.file = {
 
 NVIM_CMAKE.template = {
     nvim_cmake_json_content = [[
-    {
-        "preset": 0,
-        "preset_name": "debug"
-    }
+{
+    "preset": 0,
+    "preset_name": "debug"
+}
     ]]
 }
 
