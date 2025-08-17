@@ -11,6 +11,7 @@ local LSPS = {
     "ts_ls",
     "svelte",
     "gdscript", "gdshader_lsp",
+    "pyright",
     "html", "cssls",
     "jsonls",
     "markdown_oxide",
