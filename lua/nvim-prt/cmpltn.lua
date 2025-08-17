@@ -1,4 +1,4 @@
-local CAP = {}
+local CMPLTN = {}
 
 --[[
 -- completion was triggered by typing an identifier (24x7 code
@@ -20,7 +20,7 @@ local COMPLETION_DELAY = 150 -- in milliseconds
 
 -- custom omnifunc for fuzzy completion
 _G._fuzzy_completion_omnifunc = function(findstart, base)
-    local _snippet = require"configs.snippet"
+    local _snippet = require"nvim-prt.snppts"
 
     if findstart == 1 then
         local line = vim.fn.getline(".")
@@ -32,7 +32,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
         local row, col = cursor[1] - 1, cursor[2]
         local line_text = vim.fn.getline(".")
 
-        -- Calculate initial word boundaries
+        -- calculate initial word boundaries
         local start_char = (line_text:sub(1, col):find("[%w_]*$") or col) - 1
         local end_char = col
 
@@ -50,7 +50,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
             local base_lower = base:lower()
             local custom_items = {}
 
-            -- Add custom snippets
+            -- add custom snippets
             for trigger, snippet in pairs(_snippet.get_snippets()) do
                 if trigger:lower():find(base_lower, 1, true) then
                     table.insert(custom_items, {
@@ -70,7 +70,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
                 end
             end
 
-            -- Process LSP completion items
+            -- process LSP completion items
             for _, item in ipairs(items) do
                 local label = item.textEdit and item.textEdit.newText or item.label
                 if label and label:lower():find(base_lower, 1, true) then
@@ -82,7 +82,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
                         kind_char = kind_text:sub(1, 1):lower()
                     end
 
-                    -- Determine replacement range
+                    -- determine replacement range
                     local item_start = start_char
                     local item_end = end_char
                     local word = label
@@ -94,7 +94,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
                         word = item.textEdit.newText
                     end
 
-                    -- Validate ranges
+                    -- validate ranges
                     item_start = math.max(0, item_start)
                     item_end = math.min(#line_text, item_end)
 
@@ -117,12 +117,12 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
                 end
             end
 
-            -- Add custom snippets to matches
+            -- add custom snippets to matches
             for _, item in ipairs(custom_items) do
                 table.insert(matches, item)
             end
 
-            -- Trigger completion with initial start position
+            -- trigger completion with initial start position
             vim.fn.complete(start_char + 1, matches)
         end)
 
@@ -155,9 +155,9 @@ end
 
 ---
 
--- Default capabilities
-CAP.capabilities = vim.lsp.protocol.make_client_capabilities()
-CAP.capabilities.textDocument.completion = {
+-- default capabilities
+CMPLTN.capabilities = vim.lsp.protocol.make_client_capabilities()
+CMPLTN.capabilities.textDocument.completion = {
     contextsupport = true,
     dynamicregistration = true,
     completionitem = {
@@ -181,21 +181,21 @@ CAP.capabilities.textDocument.completion = {
 ---
 
 -- on init
-function CAP.on_init(client, buffer)
+function CMPLTN.on_init(client, buffer)
     if client:supports_method("textDocument/semanticTokens") then
         client.server_capabilities.semantictokensprovider = nil
     end
 end
 
 -- on attach
-function CAP.on_attach(client, buffer)
+function CMPLTN.on_attach(client, buffer)
     _completion_trigger(client, buffer)
 end
 
 ---
 
 -- default completion
-function CAP.default_completion(buffer)
+function CMPLTN.default_completion(buffer)
     _buf_default_completion(buffer)
 end
 
@@ -203,11 +203,11 @@ end
 -- ---
 -- # note
 -- * will reject if current server not supported from supported_lsps param
-function CAP.default_autocmd(supported_lsps)
+function CMPLTN.default_autocmd(supported_lsps)
     local _prt = {
         nvim = require"nvim-prt.tools.nvim"
     }
-    local _snippet = require"configs.snippet"
+    local _snippet = require"nvim-prt.snppts"
 
     local rejected = true
 
@@ -230,7 +230,7 @@ function CAP.default_autocmd(supported_lsps)
             local buffer_name = vim.fn.expand("%")
 
             if not vim.api.nvim_buf_is_valid(buffer) then return end
-            CAP.default_completion(buffer)
+            CMPLTN.default_completion(buffer)
         end
     })
     -- LspAttach
@@ -245,7 +245,7 @@ function CAP.default_autocmd(supported_lsps)
             if not vim.api.nvim_buf_is_valid(buffer) then return end
             if buffer_name == "" then return end
 
-            CAP.on_attach(client, buffer)
+            CMPLTN.on_attach(client, buffer)
         end
     })
     -- InsertCharPre
@@ -298,7 +298,7 @@ function CAP.default_autocmd(supported_lsps)
             local start_char = completed_item.user_data.start_char
             local end_char = completed_item.user_data.end_char
 
-            -- Handle snippet expansion
+            -- handle snippet expansion
             if completed_item.user_data.is_snippet then
                 local trigger = completed_item.word
                 local snippet = _snippet.get_snippet(trigger)
@@ -310,7 +310,7 @@ function CAP.default_autocmd(supported_lsps)
                 local indent = line:match("^%s*") or ""
                 local post_text = line:sub(end_char + 1)
 
-                -- Apply snippet with proper indentation
+                -- apply snippet with proper indentation
                 local lines = vim.split(snippet, "\n")
                 if #lines > 0 then
                     lines[#lines] = lines[#lines] .. post_text
@@ -321,10 +321,10 @@ function CAP.default_autocmd(supported_lsps)
                     end
                 end
 
-                -- Replace trigger with snippet
+                -- replace trigger with snippet
                 vim.api.nvim_buf_set_text(0, row, start_char, row, end_char, lines)
 
-                -- Position cursor at first placeholder
+                -- position cursor at first placeholder
                 local target_row = row
                 local target_col = 0
                 for i, l in ipairs(lines) do
@@ -343,4 +343,4 @@ end
 
 ---
 
-return CAP
+return CMPLTN

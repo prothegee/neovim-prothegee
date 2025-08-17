@@ -1,4 +1,4 @@
-local _cap = require"configs.cap"
+local _cap = require"nvim-prt.cmpltn"
 local _lsp = require"lspconfig"
 
 ---
@@ -10,10 +10,10 @@ local LSPS = {
     "rust_analyzer",
     "ts_ls",
     "svelte",
+    "gdscript", "gdshader_lsp",
     "html", "cssls",
     "jsonls",
     "markdown_oxide",
-    "gdscript", "gdshader_lsp"
 }
 
 ---
