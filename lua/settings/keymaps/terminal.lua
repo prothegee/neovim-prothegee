@@ -51,11 +51,11 @@ local function open_terminal_horizontal()
 
         -- use existing terminal buffer or create new one
         if terminal_buffer then
-            vim.cmd("botright 15split")
+            vim.cmd("botright 18split")
             local window = vim.api.nvim_get_current_win()
             vim.api.nvim_win_set_buf(window, terminal_buffer)
         else
-            vim.cmd("botright 15split | terminal")
+            vim.cmd("botright 18split | terminal")
         end
         vim.cmd("startinsert")
     end
