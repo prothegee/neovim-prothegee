@@ -24,12 +24,6 @@ __*NOTE:*__
 
 <br>
 
-## tools
-
-
-
-<br>
-
 ---
 
 ###### end of readme
