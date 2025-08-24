@@ -6,6 +6,12 @@ vim.pack.add({
     },
 
     {
+        src = "git@github.com:nvim-treesitter/nvim-treesitter.git",
+        name = "nvim-treesitter",
+        version = "master"
+    },
+
+    {
         src = "git@github.com:lewis6991/gitsigns.nvim.git",
         name = "gitsigns",
         version = "main"
