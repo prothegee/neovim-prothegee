@@ -24,6 +24,24 @@ __*NOTE:*__
 
 <br>
 
+```c
+int main() {
+    return 0;
+}
+```
+
+```cpp
+int main() {
+    return 0;
+}
+```
+
+```js
+function main() {
+    return 0;
+}
+```
+
 ---
 
 ###### end of readme

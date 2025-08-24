@@ -1,3 +1,5 @@
+local nvim_ts_c = require"nvim-treesitter.configs"
+
 -- default treesitters
 local TREESITTERS = {
     "lua",
@@ -5,9 +7,9 @@ local TREESITTERS = {
     "rust",
     "javascript", "typescript",
     "svelte",
-    "gdsciprt", "gdshader",
+    "gdscript", "gdshader",
     "python",
-    "htmls", "css", "scss",
+    "html", "css", "scss",
     "json",
     "markdown",
 }
@@ -16,9 +18,17 @@ local TREESITTERS = {
 
 -- not sure this will be recalled or what
 for _, treesitter in pairs(TREESITTERS) do
-    -- TODO
     vim.treesitter.language.add(treesitter)
 end
+
+nvim_ts_c.setup{
+    ensure_installed = TREESITTERS,
+    auto_install = true,
+    sync_install = false,
+    hightlight = {
+        enable = true
+    }
+}
 
 ---
 
@@ -26,11 +36,17 @@ vim.api.nvim_create_autocmd("FileType", {
     pattern = "*",
     callback = function(args)
         local buffer = args.buf
+        local filetype = vim.bo[buffer].filetype
 
         for _, treesitter in pairs(TREESITTERS) do
-            if vim.treesitter.language.add(treesitter) then
-                vim.treesitter.start(buffer, treesitter)
-                vim.bo[buffer].syntax = "ON"
+            if treesitter == filetype then
+                if vim.treesitter.language.add(treesitter) then
+                    vim.treesitter.start(buffer, treesitter)
+                    vim.bo[buffer].syntax = "ON"
+
+                    local cmd = "TSBufEnable " .. treesitter
+                    vim.cmd(cmd)
+                end
                 break
             end
         end
