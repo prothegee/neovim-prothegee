@@ -4,7 +4,7 @@ local NVIM_CMAKE = {}
 
 NVIM_CMAKE.file = {
     cmake_lists_txt = "CMakeLists.txt",
-    cmake_presets_json = "CMakePresets.json",
+    cmake_presets_json = "CMakePresets.json", -- check if already exists
     cmake_compile_commands_json = "compile_commands.json",
 
     nvim_cmake_json = "nvim-cmake.json"
@@ -233,6 +233,12 @@ function NVIM_CMAKE.preset_init()
     end
 
     local destination = vim.fn.getcwd() .. "/" .. NVIM_CMAKE.file.cmake_presets_json
+
+    if vim.uv.fs_stat(destination) then
+        vim.notify("file already exists: " .. destination .. ", skipping to prevent overwrite", vim.log.levels.WARN)
+        file:close()
+        return
+    end
 
     local outfile, outfile_error = io.open(destination, "w")
 
