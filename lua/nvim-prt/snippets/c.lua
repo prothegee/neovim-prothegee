@@ -33,4 +33,6 @@ enum Enum_e {
 #define THIS_FILE_H
 #endif // THIS_FILE_H
 ]],
+
+    comment_spacer = "// --------------------------------------------------------------- //"
 }
