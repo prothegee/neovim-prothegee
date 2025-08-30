@@ -14,10 +14,12 @@ vim.api.nvim_create_user_command("NetrwDir", function()
     vim.cmd("setlocal nowrap nonumber norelativenumber")
 
     -- toggle banner
-    vim.cmd("silent! normal I")
+    -- vim.cmd("silent! normal I")
 
     -- iter 3 times for mode number 4
-    for i = 1, 3 do
+    -- 0:thin 1:long 2:wide 3:tree
+    local MODE = 3
+    for i = 1, MODE do
         vim.cmd("silent! normal i")
     end
 end, {})

@@ -20,6 +20,9 @@ vim.opt.whichwrap:append "<>[]hl"
 
 vim.opt.winborder = "rounded"
 
+-- ensure is split right when press `v` in netrw
+vim.opt.splitright = true
+
 -- custom clipboard
 --- yank will consistent in insert and normal mode
 vim.opt.clipboard = "unnamedplus"

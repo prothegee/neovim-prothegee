@@ -29,9 +29,9 @@ enum Enum_e {
 ]],
 
     include_guard = [[
-#ifndef THIS_FILE_H
-#define THIS_FILE_H
-#endif // THIS_FILE_H
+#ifndef THIS_FILE_HH
+#define THIS_FILE_HH
+#endif // THIS_FILE_HH
 ]],
 
     class_t = [[
@@ -46,4 +46,6 @@ pubic:
 namespace namespace_n {
 } // namespace_n
 ]],
+
+    comment_spacer = "// --------------------------------------------------------------- //"
 }
