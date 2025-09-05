@@ -439,41 +439,31 @@ function NVIM_CMAKE.project_configure_build()
 
     local binary_dir = preset.binaryDir:gsub("${sourceDir}", vim.fn.getcwd())
 
-    -- local symlink = function()
-    --     local symlinkdel1, symlinkdel2 = "", ""
-    --     local compile_commands_dir_file = vim.fn.getcwd() .. "/" .. binary_dir .. "/" .. NVIM_CMAKE.file.cmake_compile_commands_json
-    --     local compile_commands_root_file = vim.fn.getcwd() .. "/" .. NVIM_CMAKE.file.cmake_compile_commands_json
-    --
-    --     if _prt.nvim.os.windows then
-    --         if io.open(vim.fn.getcwd() .. "/" .. compile_commands_dir_file, "r") ~= nil then
-    --             symlinkdel1 = "del /f /q " .. compile_commands_dir_file .. ";"
-    --         end
-    --         if io.open(vim.fn.getcwd() .. "/" .. compile_commands_root_file, "r") ~= nil then
-    --             symlinkdel2 = "del /f /q " .. compile_commands_root_file .. ";"
-    --         end
-    --
-    --         return string.format("%s%smklink %s/%s; ", symlinkdel1, symlinkdel2, binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
-    --     else
-    --         if io.open(vim.fn.getcwd() .. "/" .. compile_commands_dir_file, "r") ~= nil then
-    --             symlinkdel1 = "rm -rf " .. compile_commands_dir_file .. ";"
-    --         end
-    --         if io.open(vim.fn.getcwd() .. "/" .. compile_commands_root_file, "r") ~= nil then
-    --             symlinkdel2 = "rm -rf " .. compile_commands_root_file .. ";"
-    --         end
-    --
-    --         return string.format("ln -s %s/%s; ", symlinkdel1, symlinkdel2, binary_dir, NVIM_CMAKE.file.cmake_compile_commands_json)
-    --     end
-    -- end
-    --
-    -- local cmake_cmd = string.format(
-    --     "%scmake --build \"%s\"",
-    --     symlink(),
-    --     binary_dir
-    -- )
+    -- create symlink so neovim can read the compiled files
+    local symlink = function()
+        local compile_commands_dir_file = binary_dir .. "/" .. NVIM_CMAKE.file.cmake_compile_commands_json
+        local compile_commands_root_file = vim.fn.getcwd() .. "/" .. NVIM_CMAKE.file.cmake_compile_commands_json
+
+        local delete_cmd = ""
+        if io.open(compile_commands_root_file, "r") then
+            if _prt.nvim.os.windows then
+                delete_cmd = "del /f /q \"" .. compile_commands_root_file .. "\" 2>nul && "
+            else
+                delete_cmd = "rm -f \"" .. compile_commands_root_file .. "\" && "
+            end
+        end
+
+        if _prt.nvim.os.windows then
+            return delete_cmd .. "mklink \"" .. compile_commands_root_file .. "\" \"" .. compile_commands_dir_file .. "\""
+        else
+            return delete_cmd .. "ln -sf \"" .. compile_commands_dir_file .. "\" \"" .. compile_commands_root_file .. "\""
+        end
+    end
 
     local cmake_cmd = string.format(
-        "cmake --build \"%s\";",
-        binary_dir
+        "cmake --build \"%s\";%s;",
+        binary_dir,
+        symlink()
     )
 
     _prt.nvim.create_terminal(cmake_cmd, "NvimCmake: Project Configure Build, Succeed", "NvimCmake: Project Configure Build, Failed", 0.3)
