@@ -44,7 +44,7 @@ pubic:
 
     namespace_n = [[
 namespace namespace_n {
-} // namespace_n
+} // namespace namespace_n
 ]],
 
     comment_spacer = [[
