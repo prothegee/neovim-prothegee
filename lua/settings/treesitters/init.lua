@@ -12,6 +12,7 @@ local TREESITTERS = {
     "html", "css", "scss",
     "json", "jsonc", "json5",
     "markdown",
+    "sql",
 }
 
 ---
