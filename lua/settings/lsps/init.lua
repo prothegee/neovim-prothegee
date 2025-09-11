@@ -15,6 +15,7 @@ local LSPS = {
     "html", "cssls",
     "jsonls",
     "markdown_oxide",
+    -- "sqls",
 }
 
 ---
