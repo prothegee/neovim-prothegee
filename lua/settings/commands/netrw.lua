@@ -10,7 +10,7 @@ vim.api.nvim_create_user_command("NetrwDir", function()
     end
 
     -- netrw configs
-    vim.cmd("vertical leftabove 30Lex")
+    vim.cmd("vertical leftabove 39Lex")
     vim.cmd("setlocal nowrap nonumber norelativenumber")
 
     -- toggle banner
