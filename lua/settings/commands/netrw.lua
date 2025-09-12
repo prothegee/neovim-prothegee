@@ -18,7 +18,7 @@ vim.api.nvim_create_user_command("NetrwDir", function()
 
     -- iter 3 times for mode number 4
     -- 0:thin 1:long 2:wide 3:tree
-    local MODE = 3
+    local MODE = 0
     for i = 1, MODE do
         vim.cmd("silent! normal i")
     end
