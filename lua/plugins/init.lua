@@ -1,5 +1,11 @@
 vim.pack.add({
     {
+        src = "git@github.com:olimorris/onedarkpro.nvim.git",
+        name = "onedarkpro.nvim",
+        version = "main"
+    },
+
+    {
         src = "git@github.com:neovim/nvim-lspconfig.git",
         name = "lspconfig",
         version = "master"

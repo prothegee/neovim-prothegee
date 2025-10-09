@@ -19,10 +19,18 @@
 - sorbet
 - torte
 - vim
+
+* extra
+https://github.com/olimorris/onedarkpro.nvim
+- onedark
+- onelight
+- onedark_vivid
+- onedark_dark
+- vaporwave
 --]]
 vim.cmd [[
     "base theme
-    colorscheme retrobox
+    colorscheme vaporwave
 
     highlight Normal guibg=none
     highlight NonText guibg=none

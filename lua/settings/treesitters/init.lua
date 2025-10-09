@@ -5,6 +5,7 @@ local TREESITTERS = {
     "lua",
     "c", "cpp", "cmake",
     "rust",
+    "go",
     "javascript", "typescript",
     "svelte",
     "gdscript", "gdshader",

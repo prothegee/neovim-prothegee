@@ -13,6 +13,7 @@ __*NOTE:*__
 * check this [file](./lua/settings/lsps/init.lua) for lsp/s
 * configured for:
     - c, cpp, cmake
+    - *rust, *go, *js, *ts
 
 <br>
 

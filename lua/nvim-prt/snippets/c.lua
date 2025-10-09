@@ -1,40 +1,30 @@
 return {
-    int_main = [[
+
+_comment_spacer_c_based = [[
+// --------------------------------------------------------- // ]],
+
+_head_guard_h = [[
+#ifndef $1_H
+#define $1_H
+#endif // $1_H]],
+
+_enum_c_based = [[
+enum $1 {
+    // TODO
+}; // enum $1]],
+
+_struct_c_based = [[
+struct $1 {
+    // TODO
+}; // struct $1]],
+
+_int_main_c_based = [[
 int main() {
     return 0;
-}
-]],
-    int_main_args = [[
+}]],
+
+_int_main_argcv_c_based = [[
 int main(int argc, char* argv[]) {
     return 0;
-}
-]],
-
-    for_i = [[
-for (int i = 0; i < var; i++) {
-    // TODO
-}
-]],
-
-    struct_t = [[
-struct Struct_t {
-    // TODO
-}; // Struct_t
-]],
-
-    enum_e = [[
-enum Enum_e {
-    // TODO
-} // Enum_e
-]],
-
-    include_guard = [[
-#ifndef THIS_FILE_H
-#define THIS_FILE_H
-#endif // THIS_FILE_H
-]],
-
-    comment_spacer = [[
-// --------------------------------------------------------------- //
-]]
+}]],
 }

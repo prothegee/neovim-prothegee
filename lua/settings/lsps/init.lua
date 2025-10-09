@@ -1,5 +1,5 @@
 local _cap = require"nvim-prt.cmpltn"
-local _lsp = require"lspconfig"
+-- local _lsp = require"lspconfig" -- deprecated
 
 ---
 
@@ -8,6 +8,7 @@ local LSPS = {
     "lua_ls",
     "clangd", "neocmake",
     "rust_analyzer",
+    "gopls",
     "ts_ls",
     "svelte",
     "gdscript", "gdshader_lsp",
@@ -67,7 +68,7 @@ for _, lsp in pairs(LSPS) do
         ocap = vim.tbl_deep_extend("force", ocap, opts)
     end
 
-    if _lsp[lsp].setup then _lsp[lsp].setup(ocap) end
+    -- if _lsp[lsp].setup then _lsp[lsp].setup(ocap) end -- deprecated
     if vim.lsp.config then vim.lsp.config(lsp, ocap) end
 end
 
