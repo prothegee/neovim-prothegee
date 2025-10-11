@@ -15,6 +15,7 @@ SNPPTS.snippets.c = require"nvim-prt.snippets.c"
 SNPPTS.snippets.cpp = require"nvim-prt.snippets.cpp"
 -- todo: cmake snippet
 -- todo: rust snippet
+-- todo: go snippet
 -- todo: javascript snippet
 -- todo: svelte snippet
 -- todo: html
