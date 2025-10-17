@@ -337,6 +337,14 @@ function CMPLTN.default_autocmd(supported_lsps)
                 end
                 vim.api.nvim_win_set_cursor(0, { target_row + 1, target_col })
             end
+
+            -- handle lsp-provided
+            local insert_text = completed_item.insertText
+            local label = completed_item.label
+
+            -- Prefer insertText, fallback to label
+            local snippet_text = insert_text or word or label
+            if not snippet_text then return end
         end,
     })
 end
