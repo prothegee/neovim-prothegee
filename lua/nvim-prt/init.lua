@@ -2,13 +2,12 @@ local NVIM_PRT = {}
 
 local version = {
     major = 0,
-    minor = 8,
+    minor = 9,
     patch = 0,
-    dates = 20251009,
+    dates = 20251018,
 }
 
 ---
-
 
 -- actual nvim-prt dir
 NVIM_PRT.dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")

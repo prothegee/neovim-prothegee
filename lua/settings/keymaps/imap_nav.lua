@@ -14,3 +14,14 @@ vim.api.nvim_set_keymap("i", "<A-Del>",
     silent = true,
     noremap = true
 })
+
+---
+
+-- show `DiagnosticShowFloatWindow`
+vim.api.nvim_set_keymap("i", "<C-S-k>",
+    "<cmd>DiagnosticShowFloatWindow<CR>",
+{
+    desc = "show floating window diagnostic",
+    silent = true,
+    noremap = true
+})
