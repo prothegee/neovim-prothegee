@@ -134,7 +134,8 @@ end
 
 local _buf_default_completion = function(buffer)
     vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
-    vim.bo[buffer].omnifunc = "v:lua._fuzzy_completion_omnifunc"
+    vim.bo[buffer].omnifunc = "v:lua.vim.lsp.omnifunc"
+    -- vim.bo[buffer].omnifunc = "v:lua._fuzzy_completion_omnifunc"
 end
 
 local _completion_trigger = function(client, buffer)
@@ -280,7 +281,9 @@ function CMPLTN.default_autocmd(supported_lsps)
             if vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        "<cmd>call v:lua._fuzzy_completion_omnifunc(0, '')<CR>", true, true, true
+                        "<C-x><C-o>",
+                        -- "<cmd>call v:lua._fuzzy_completion_omnifunc(0, '')<CR>",
+                        true, true, true
                     ), "n")
                 end, COMPLETION_DELAY)
             end
@@ -337,14 +340,6 @@ function CMPLTN.default_autocmd(supported_lsps)
                 end
                 vim.api.nvim_win_set_cursor(0, { target_row + 1, target_col })
             end
-
-            -- handle lsp-provided
-            local insert_text = completed_item.insertText
-            local label = completed_item.label
-
-            -- Prefer insertText, fallback to label
-            local snippet_text = insert_text or word or label
-            if not snippet_text then return end
         end,
     })
 end

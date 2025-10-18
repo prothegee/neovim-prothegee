@@ -70,42 +70,6 @@ for _, lsp in pairs(LSPS) do
 
 end
 
-vim.api.nvim_create_autocmd("FileType", {
-  callback = function(ev)
-    local ft = ev.match
-    local server = LSPS[ft]
-    if not server then return end
-
-    -- Avoid duplicate servers
-    for _, client in ipairs(vim.lsp.get_active_clients({ bufnr = ev.buf })) do
-      if client.name == server then return end
-    end
-
-    local config = vim.tbl_deep_extend("force",
-      vim.lsp.config.defaults or {},
-      server_settings[server] or {}
-    )
-
-    -- Use lspconfig's .server field to get cmd, root_dir, etc.
-    local server_def = _lsp[server]
-    if not server_def then return end
-
-    local opts = server_def.server
-    if opts.root_dir then
-      config.root_dir = opts.root_dir(vim.api.nvim_buf_get_name(ev.buf))
-    end
-    if opts.cmd then
-      config.cmd = opts.cmd
-    end
-    if opts.filetypes then
-      config.filetypes = opts.filetypes
-    end
-    -- Add other fields as needed (init_options, etc.)
-
-    vim.lsp.start(config)
-  end
-})
-
 -- default
 vim.lsp.config("*", {
     on_init = _cap.on_init,
