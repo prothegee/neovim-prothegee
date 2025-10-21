@@ -22,7 +22,7 @@ local state = {
     all_files = {},             -- cache all files in the directory
     original_win = nil,         -- origin window before opening finder
     header_lines = 2,           -- n of fixed header lines
-    mode = "files",             -- "files" or "buffers"
+    mode = "files",             -- "files", "buffers", or "all"
     buf_keymaps = {},           -- stores keymaps to clear later
     win_closed_autocmd = nil,   -- tracks window autocommand
 }
@@ -47,8 +47,72 @@ local function is_valid_buf(buf)
     return buf and vim.api.nvim_buf_is_valid(buf)
 end
 
-local function scan_directory(dir)
+local function load_ignore_patterns()
+    local ignore_file = state.cwd .. "/.nvimignore"
+    local patterns = {}
+
+    local file = io.open(ignore_file, "r")
+    if not file then
+        return patterns
+    end
+
+    for line in file:lines() do
+        -- Remove comments and trim whitespace
+        local clean_line = line:gsub("#.*$", ""):gsub("^%s*(.-)%s*$", "%1")
+        if clean_line ~= "" then
+            table.insert(patterns, clean_line)
+        end
+    end
+
+    file:close()
+    return patterns
+end
+
+local function should_ignore(file_path, ignore_patterns)
+    if not ignore_patterns or #ignore_patterns == 0 then
+        return false
+    end
+
+    for _, pattern in ipairs(ignore_patterns) do
+        -- clean the pattern (remove trailing slashes for comparison)
+        local clean_pattern = pattern:gsub("/+$", "")
+
+        -- exact match for files/directories
+        if file_path == clean_pattern then
+            return true
+        end
+
+        -- directory pattern (ends with /) - match directory and its contents
+        if pattern:sub(-1) == "/" then
+            local dir_pattern = pattern:sub(1, -2)
+            -- Match directory itself or any file inside it
+            if file_path == dir_pattern or file_path:sub(1, #dir_pattern + 1) == dir_pattern .. "/" then
+                return true
+            end
+        else
+            -- wildcard matching
+            if pattern:find("*") then
+                -- convert wildcard pattern to Lua pattern
+                local regex_pattern = "^" .. pattern:gsub("%.", "%%."):gsub("%*", ".*") .. "$"
+                if file_path:match(regex_pattern) then
+                    return true
+                end
+            end
+
+            -- simple directory match without trailing slash
+            if file_path:sub(1, #clean_pattern + 1) == clean_pattern .. "/" then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local function scan_directory(dir, use_ignore)
     local files = {}
+    local ignore_patterns = use_ignore and load_ignore_patterns() or {}
+
     local cmd = is_windows() and
         "dir \""..dir.."\" /b /s /a-d" or
         "find \""..dir.."\" -type f" .. (config.hidden and "" or " -not -path \"*/.*\"")
@@ -71,15 +135,20 @@ local function scan_directory(dir)
                 rel_path = file:sub(#cwd_normalized + 1)
             end
 
-            table.insert(files, rel_path)
+            -- skip if file matches ignore patterns and use_ignore is true
+            if not (use_ignore and should_ignore(rel_path, ignore_patterns)) then
+                table.insert(files, rel_path)
+            end
         end
         handle:close()
     end
     return files
 end
 
-local function get_open_buffers()
+local function get_open_buffers(use_ignore)
     local buffers = {}
+    local ignore_patterns = use_ignore and load_ignore_patterns() or {}
+
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buflisted then
             local file = vim.api.nvim_buf_get_name(buf)
@@ -97,7 +166,10 @@ local function get_open_buffers()
                     file = file:sub(#cwd_normalized + 1)
                 end
 
-                table.insert(buffers, file)
+                -- skip if buffer matches ignore patterns and use_ignore is true
+                if not (use_ignore and should_ignore(file, ignore_patterns)) then
+                    table.insert(buffers, file)
+                end
             end
         end
     end
@@ -219,8 +291,17 @@ local function update_display()
 
     -- shortened path for display
     local display_cwd = shorten_path(state.cwd)
+    local title = "XPLRR"
+    if state.mode == "files" then
+        title = "XPLRR: " .. display_cwd
+    elseif state.mode == "buffers" then
+        title = "XPLRR Buffers"
+    elseif state.mode == "all" then
+        title = "XPLRR All: " .. display_cwd
+    end
+
     local display_lines = {
-        state.mode == "files" and ("XPLRR: "..display_cwd) or "XPLRR Buffers",
+        title,
         "> "..state.search_term
     }
 
@@ -312,11 +393,30 @@ local function create_window(mode)
     end
 
     -- get files based on mode
+    state.cwd = vim.fn.getcwd()
     if mode == "buffers" then
-        state.all_files = get_open_buffers()
+        state.all_files = get_open_buffers(false) -- don't use ignore for buffers mode
+    elseif mode == "all" then
+        -- combine files from directory (with ignore) and buffers (without ignore)
+        local dir_files = scan_directory(state.cwd, true) -- use ignore for directory files
+        local buffer_files = get_open_buffers(false) -- don't use ignore for buffers
+
+        -- merge and remove duplicates
+        local all_files_map = {}
+        for _, file in ipairs(dir_files) do
+            all_files_map[file] = true
+        end
+        for _, file in ipairs(buffer_files) do
+            all_files_map[file] = true
+        end
+
+        state.all_files = {}
+        for file, _ in pairs(all_files_map) do
+            table.insert(state.all_files, file)
+        end
+        table.sort(state.all_files)
     else
-        state.cwd = vim.fn.getcwd()
-        state.all_files = scan_directory(state.cwd)
+        state.all_files = scan_directory(state.cwd, false) -- don't use ignore for regular files mode
     end
 
     state.search_term = ""
@@ -328,6 +428,15 @@ local function create_window(mode)
     local height = math.floor(vim.o.lines * 0.6)
 
     -- window options
+    local title = "XPLRR"
+    if state.mode == "files" then
+        title = "XPLRR"
+    elseif state.mode == "buffers" then
+        title = "XPLRR Buffers"
+    elseif state.mode == "all" then
+        title = "XPLRR All"
+    end
+
     local win_opts = {
         relative = "editor",
         width = width,
@@ -336,7 +445,7 @@ local function create_window(mode)
         row = (vim.o.lines - height) / 2,
         style = "minimal",
         border = config.border,
-        title = state.mode == "files" and "XPLRR" or "XPLRR Buffers",
+        title = title,
         title_pos = "center",
     }
 
@@ -429,8 +538,6 @@ local function create_window(mode)
             end
         end, {buffer = state.buf}},
 
-        -- {"n", "<Esc>", close_window, {buffer = state.buf}},
-        -- {"i", "<Esc>", close_window, {buffer = state.buf}},
         {"n", "<C-q>", close_window, {buffer = state.buf}},
         {"i", "<C-q>", close_window, {buffer = state.buf}},
 
@@ -563,7 +670,8 @@ local function create_window(mode)
     vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
 
     vim.schedule(function()
-        vim.notify("XPLRR: press ctrl+q to exit")
+        local mode_msg = state.mode == "files" and "files" or state.mode == "buffers" and "buffers" or "all files and buffers"
+        vim.notify("XPLRR " .. mode_msg .. ": press ctrl+q to exit")
     end)
 end
 
@@ -571,14 +679,15 @@ end
 
 -- this xplrr command list
 XPLRR.cmd = {
-    xplrr_files = "Xplrr",
-    xplrr_buffers = "XplrrBuffers"
+    xplrr = "Xplrr",
+    xplrr_all = "XplrrAll",
+    xplrr_buffers = "XplrrBuffers",
 }
 
 ---
 
 -- call xplrr for files
-function XPLRR.toggle_files()
+function XPLRR.toggle_all()
     if state.win and vim.api.nvim_win_is_valid(state.win) then
         close_window()
     else
@@ -595,12 +704,28 @@ function XPLRR.toggle_buffers()
     end
 end
 
+-- call xplrr for all (files + buffers) with ignore support
+function XPLRR.toggle()
+    if state.win and vim.api.nvim_win_is_valid(state.win) then
+        close_window()
+    else
+        create_window("all")
+    end
+end
+
 ---
 
 function XPLRR.setup()
     vim.api.nvim_create_user_command(
-        XPLRR.cmd.xplrr_files,
-        XPLRR.toggle_files,
+        XPLRR.cmd.xplrr,
+        XPLRR.toggle,
+        {
+            desc = "XPLRR: search all files (respects .nvimignore)"
+        }
+    )
+    vim.api.nvim_create_user_command(
+        XPLRR.cmd.xplrr_all,
+        XPLRR.toggle_all,
         {
             desc = "XPLRR: search all files (including hidden files)"
         }
@@ -617,3 +742,4 @@ end
 ---
 
 return XPLRR
+

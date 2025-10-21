@@ -67,7 +67,6 @@ for _, lsp in pairs(LSPS) do
     end
 
     if vim.lsp.config then vim.lsp.config(lsp, ocap) end
-
 end
 
 -- default
