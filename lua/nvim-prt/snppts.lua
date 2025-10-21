@@ -7,21 +7,28 @@ SNPPTS.snippets = {}
 
 ---
 
--- lua snippet
 SNPPTS.snippets.lua = require"nvim-prt.snippets.lua"
--- todo: c snippet
 SNPPTS.snippets.c = require"nvim-prt.snippets.c"
--- todo: cpp snippet
 SNPPTS.snippets.cpp = require"nvim-prt.snippets.cpp"
--- todo: cmake snippet
--- todo: rust snippet
--- todo: go snippet
--- todo: javascript snippet
--- todo: svelte snippet
--- todo: html
+-- next: cmake snippet
+-- next: rust snippet
+-- next: go snippet
+-- next: javascript snippet
+-- next: svelte snippet
+-- next: html
 
 ---
 
+--[[
+TODO:
+- when snippet is expand and found $n (n is number):
+    - store that, so the state need to be able to change arg of that in $n, i.e
+        ```
+        struct $1 {
+            // TODO
+        }; // struct $1
+        ```
+--]]
 local function expand_snippet_with_info(info)
     local row = info.row
     local start_col = info.start_col

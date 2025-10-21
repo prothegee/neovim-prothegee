@@ -10,3 +10,4 @@ vim.schedule(function()
     require"settings.lsps"
     require"settings.treesitters"
 end)
+

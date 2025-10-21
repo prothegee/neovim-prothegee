@@ -3,6 +3,16 @@ local DBGR = {}
 
 ---
 
+--[[
+debuger note:
+- c & cpp project: gdb or lldb
+- rust project   : rust-gdb or rust-lldb
+- js/ts project  : node or bun or deno?
+- go project     : ?
+--]]
+
+---
+
 DBGR.template = {
     dot_nvim_launch_json_content = [[
 {
@@ -25,13 +35,19 @@ DBGR.template = {
         //     "type": "node",
         //     "program": "${workspaceFolder}/app_javascript.js",
         //     "debugger": "node"
-        // }
+        // },
+        // {
+        //     "name": "Node Example",
+        //     "type": "go",
+        //     "program": "${workspaceFolder}/app_go.go",
+        //     "debugger": "node"
+        // },
     ],
     "compounds": [
         {
             "name": "Full System",
             "configurations": [
-                // "Cpp Sample", "Rust Example", "Node Example"
+                // "Cpp Sample", "Rust Example", "Node Example", "Go Example"
             ]
         }
     ]

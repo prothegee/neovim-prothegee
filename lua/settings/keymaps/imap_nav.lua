@@ -25,3 +25,17 @@ vim.api.nvim_set_keymap("i", "<C-S-k>",
     silent = true,
     noremap = true
 })
+
+---
+---
+
+-- go to definition
+-- TODO: need to store where it come from first so it can go bacl
+vim.keymap.set("i", "<S-j>",
+    vim.lsp.buf.definition,
+{
+    desc = "go to definition",
+    silent = true,
+    noremap = true
+})
+

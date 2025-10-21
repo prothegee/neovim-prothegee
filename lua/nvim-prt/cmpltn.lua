@@ -4,21 +4,37 @@ local CMPLTN = {}
 -- completion was triggered by typing an identifier (24x7 code
 -- complete), manual invocation (e.g ctrl+space) or via api.
 1:invoked
+    - currently for function:
+        - fullfil for the available params, but can't return & change for the param/s
 
 -- completion was triggered by a trigger character specified by
 -- the `triggercharacters` properties of the `completionregistrationoptions`.
 2:triggercharacter
+    - currently for function:
+        - not fullfil for the available params
 
 -- completion was re-triggered as the current completion list is incomplete.
 3:triggerforincompletecompletions
+    - currently for function:
+        - fullfil for the available params, but can't return & change for the param/s
 --]]
-local TRIGGER_KIND = 3
+local TRIGGER_KIND = 2
 
 local COMPLETION_DELAY = 150 -- in milliseconds
 
 ---
 
 -- custom omnifunc for fuzzy completion
+--[[
+TODO:
+- this completion also need to find all param that available from function args, i.e.:
+    - when there's available function like in c/c++, says `void say_your_name(const char* name)`
+    - but when it completed (if TRIGGER_KIND ~= 2), it become `say_your_name(${1:const char *name})`, the problem are:
+        - active cursor end-up in last of completed function call
+        - can't change first what ever param
+        - it should be able to change the available list on param when press tab by default
+    - see TRIGGER_KIND for which one will suits
+--]]
 _G._fuzzy_completion_omnifunc = function(findstart, base)
     local _snippet = require"nvim-prt.snppts"
 
@@ -87,7 +103,7 @@ _G._fuzzy_completion_omnifunc = function(findstart, base)
                     local item_end = end_char
                     local word = label
 
-                    -- Use LSP's textEdit range if available
+                    -- use LSP's textEdit range if available
                     if item.textEdit and item.textEdit.range then
                         item_start = item.textEdit.range.start.character
                         item_end = item.textEdit.range["end"].character
@@ -261,7 +277,9 @@ function CMPLTN.default_autocmd(supported_lsps)
             if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        "<C-x><C-o>", true, true, true
+                        "<C-x><C-o>",
+                        -- "<cmd>call v:lua._fuzzy_completion_omnifunc(0, '')<CR>",
+                        true, true, true
                     ), "n")
                 end, COMPLETION_DELAY)
             end
