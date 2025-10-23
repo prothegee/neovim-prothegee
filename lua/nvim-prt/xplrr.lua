@@ -57,7 +57,7 @@ local function load_ignore_patterns()
     end
 
     for line in file:lines() do
-        -- Remove comments and trim whitespace
+        -- remove comments and trim whitespace
         local clean_line = line:gsub("#.*$", ""):gsub("^%s*(.-)%s*$", "%1")
         if clean_line ~= "" then
             table.insert(patterns, clean_line)
@@ -113,35 +113,48 @@ local function scan_directory(dir, use_ignore)
     local files = {}
     local ignore_patterns = use_ignore and load_ignore_patterns() or {}
 
-    local cmd = is_windows() and
-        "dir \""..dir.."\" /b /s /a-d" or
-        "find \""..dir.."\" -type f" .. (config.hidden and "" or " -not -path \"*/.*\"")
-
-    local handle = io.popen(cmd)
-    if handle then
-        for file in handle:lines() do
-            -- normalize path separators
-            file = file:gsub("\\", "/")
-
-            -- make relative to cwd
-            local cwd_normalized = state.cwd:gsub("\\", "/")
-            if cwd_normalized:sub(-1) ~= "/" then
-                cwd_normalized = cwd_normalized .. "/"
-            end
-
-            -- extract relative path
-            local rel_path = file
-            if file:sub(1, #cwd_normalized) == cwd_normalized then
-                rel_path = file:sub(#cwd_normalized + 1)
-            end
-
-            -- skip if file matches ignore patterns and use_ignore is true
-            if not (use_ignore and should_ignore(rel_path, ignore_patterns)) then
-                table.insert(files, rel_path)
+    local function scan_recursive(current_dir)
+        local handle, err = vim.loop.fs_scandir(current_dir)
+        if not handle then
+            -- silently skip directories we can't access
+            if err:match("Permission denied") then
+                return
+            else
+                vim.notify("Error scanning directory: " .. err, vim.log.levels.WARN)
+                return
             end
         end
-        handle:close()
+
+        while true do
+            local name, type = vim.loop.fs_scandir_next(handle)
+            if not name then break end
+
+            local full_path = current_dir .. "/" .. name
+            local rel_path = full_path:sub(#state.cwd + 2) -- +2 to remove leading slash
+
+            -- skip hidden files if not configured to show them
+            if not config.hidden and name:sub(1, 1) == "." then
+                goto continue
+            end
+
+            if type == "file" then
+                -- check if file should be ignored
+                if not should_ignore(rel_path, ignore_patterns) then
+                    table.insert(files, rel_path)
+                end
+            elseif type == "directory" then
+                -- check if directory should be ignored
+                if not should_ignore(rel_path, ignore_patterns) then
+                    -- recursively scan subdirectory
+                    scan_recursive(full_path)
+                end
+            end
+
+            ::continue::
+        end
     end
+
+    scan_recursive(dir)
     return files
 end
 
