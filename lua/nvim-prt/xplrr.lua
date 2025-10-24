@@ -409,7 +409,7 @@ local function create_window(mode)
     state.cwd = vim.fn.getcwd()
     if mode == "buffers" then
         state.all_files = get_open_buffers(false) -- don't use ignore for buffers mode
-    elseif mode == "all" then
+    elseif mode == "files" then
         -- combine files from directory (with ignore) and buffers (without ignore)
         local dir_files = scan_directory(state.cwd, true) -- use ignore for directory files
         local buffer_files = get_open_buffers(false) -- don't use ignore for buffers
@@ -699,12 +699,21 @@ XPLRR.cmd = {
 
 ---
 
+-- call xplrr for all (files + buffers) with ignore support
+function XPLRR.toggle()
+    if state.win and vim.api.nvim_win_is_valid(state.win) then
+        close_window()
+    else
+        create_window("files")
+    end
+end
+
 -- call xplrr for files
 function XPLRR.toggle_all()
     if state.win and vim.api.nvim_win_is_valid(state.win) then
         close_window()
     else
-        create_window("files")
+        create_window("all")
     end
 end
 
@@ -714,15 +723,6 @@ function XPLRR.toggle_buffers()
         close_window()
     else
         create_window("buffers")
-    end
-end
-
--- call xplrr for all (files + buffers) with ignore support
-function XPLRR.toggle()
-    if state.win and vim.api.nvim_win_is_valid(state.win) then
-        close_window()
-    else
-        create_window("all")
     end
 end
 
