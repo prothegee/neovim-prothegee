@@ -166,7 +166,7 @@ local function parse_args(fargs)
         if arg == "--sensitive" then
             flags.sensitive = true
             i = i + 1
-        elseif arg == "--match" then
+        elseif arg == "--exact" then
             flags.exact = true
             i = i + 1
         elseif arg == "--dir" then
