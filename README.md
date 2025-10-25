@@ -19,6 +19,7 @@ __*NOTE:*__
 
 ## modules
 
+- [slr](./lua/nvim-prt/slr.lua)
 - [xplrr](./lua/nvim-prt/xplrr.lua)
 
 <br>
