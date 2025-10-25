@@ -7,15 +7,16 @@ SNPPTS.snippets = {}
 
 ---
 
--- next: lua snippet
--- next: c snippet
--- next: cpp snippet
--- next: cmake snippet
--- next: rust snippet
--- next: go snippet
--- next: javascript snippet
--- next: svelte snippet
+-- next: c
+-- next: go
+-- next: cpp
+-- next: lua
+-- next: rust
+-- next: cmake
 -- next: html
+-- next: svelte
+-- next: javascript
+-- next: typescript
 
 ---
 
@@ -50,3 +51,4 @@ TODO:
 ---
 
 return SNPPTS
+
