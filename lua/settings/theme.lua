@@ -1,3 +1,10 @@
+-- vim.opt.winblend = 12
+-- vim.opt.pumblend = 12
+-- vim.opt.pumwidth = 12
+-- vim.opt.pumheight = 12
+
+---
+
 --[[
 # below list is ok with transparent background
 * suits me:
@@ -93,6 +100,13 @@ vim.cmd([[
             "autocmd ColorScheme * highlight WinBarNC      guibg=none guifg=none
             "autocmd ColorScheme * highlight MsgArea       guibg=none guifg=none
             "autocmd ColorScheme * highlight MsgSeparator  guibg=none guifg=none
+
+        "" pmenu
+            autocmd ColorScheme * highlight Pmenu       guibg=none    guifg=#FFBB00
+            autocmd ColorScheme * highlight PmenuSel    guibg=#FFBB00 guifg=#121212
+            autocmd ColorScheme * highlight PmenuBorder guibg=#121212 guifg=#FFBB00
+            autocmd ColorScheme * highlight PmenuSbar   guibg=#121212 guifg=#FFBB00
+            autocmd ColorScheme * highlight PmenuThumb  guibg=#FFBB00 guifg=#121212
 
         "" diagnostic
             "autocmd ColorScheme * highlight DiagnosticError           guibg=none guifg=none
