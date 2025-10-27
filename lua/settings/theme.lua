@@ -1,7 +1,7 @@
 -- vim.opt.winblend = 12
 -- vim.opt.pumblend = 12
--- vim.opt.pumwidth = 12
--- vim.opt.pumheight = 12
+vim.opt.pumwidth = 12
+vim.opt.pumheight = 6
 
 ---
 
@@ -140,5 +140,6 @@ vim.cmd([[
 
 -- status line
 -- * see settings/global.lua for lua.* global functions
-vim.opt.statusline = "  %{v:lua.get_active_current_mode()}   %f %m %=  %{v:lua.get_active_lsp()}  %{v:lua.get_diagnostic_hint()}  %{v:lua.get_diagnostic_info()}  %{v:lua.get_diagnostic_warn()}  %{v:lua.get_diagnostic_error()}  󱪶 %l:󱪷 %c  󱗖 %p%% "
+-- vim.opt.statusline = "  %{v:lua.get_active_current_mode()}   %f %m %=  %{v:lua.get_active_lsp()}  %{v:lua.get_diagnostic_hint()}  %{v:lua.get_diagnostic_info()}  %{v:lua.get_diagnostic_warn()}  %{v:lua.get_diagnostic_error()}  󱪶 %l:󱪷 %c  󱗖 %p%% "
+vim.opt.statusline = "  %{v:lua.get_active_current_mode()}   %{v:lua.get_cwd_and_file_buffer()} %=  %{v:lua.get_active_lsp()}  %{v:lua.get_diagnostic_hint()}  %{v:lua.get_diagnostic_info()}  %{v:lua.get_diagnostic_warn()}  %{v:lua.get_diagnostic_error()}  󱪶 %l:󱪷 %c  󱗖 %p%% "
 

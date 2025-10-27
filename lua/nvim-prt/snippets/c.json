@@ -6,6 +6,39 @@
         ],
         "trigger": "_comment_spacer",
         "description": "comment spacer seperator"
+    },
+    {
+        "name": "include head guard h",
+        "body": [
+            "#ifndef REPLACE_H",
+            "#define REPLACE_H",
+            "#endif // REPLACE_H",
+            ""
+        ],
+        "trigger": "_include_head_guard_h",
+        "description": "include head guard h"
+    },
+    {
+        "name": "int main",
+        "body": [
+            "int main() {",
+            "   return 0;",
+            "}",
+            ""
+        ],
+        "trigger": "_int_main",
+        "description": "int main"
+    },
+    {
+        "name": "int main argc argv",
+        "body": [
+            "int main(int argc, char* argv[]) {",
+            "   return 0;",
+            "}",
+            ""
+        ],
+        "trigger": "_int_main_argc_argv",
+        "description": "int main with argc argv"
     }
 ]
 

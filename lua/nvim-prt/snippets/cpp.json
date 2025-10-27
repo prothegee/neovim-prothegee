@@ -6,6 +6,52 @@
         ],
         "trigger": "_comment_spacer",
         "description": "comment spacer seperator"
+    },
+    {
+        "name": "include head guard hh",
+        "body": [
+            "#ifndef REPLACE_HH",
+            "#define REPLACE_HH",
+            "#endif // REPLACE_HH",
+            ""
+        ],
+        "trigger": "_include_head_guard_hh",
+        "description": "include head guard hh"
+    },
+    {
+        "name": "include head guard hpp",
+        "body": [
+            "#ifndef REPLACE_HPP",
+            "#define REPLACE_HPP",
+            "#endif // REPLACE_HPP",
+            ""
+        ],
+        "trigger": "_include_head_guard_hpp",
+        "description": "include head guard hpp"
+    },
+    {
+        "name": "int main",
+        "body": [
+            "int main() {",
+            "   return 0;",
+            "}",
+            ""
+        ],
+        "trigger": "_int_main",
+        "description": "int main"
+    },
+    {
+        "name": "int main argc argv",
+        "body": [
+            "int main(int argc, char* argv[]) {",
+            "   return 0;",
+            "}",
+            ""
+        ],
+        "trigger": "_int_main_argc_argv",
+        "description": "int main with argc argv"
     }
+
+
 ]
 
