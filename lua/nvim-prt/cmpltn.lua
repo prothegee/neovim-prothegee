@@ -1,4 +1,23 @@
 local CMPLTN = {}
+--[[
+-- completion was triggered by typing an identifier (24x7 code
+-- complete), manual invocation (e.g ctrl+space) or via api.
+1:invoked
+    - currently for function:
+        - fullfil for the available params, but can't return & change for the param/s
+
+-- completion was triggered by a trigger character specified by
+-- the `triggercharacters` properties of the `completionregistrationoptions`.
+2:triggercharacter
+    - currently for function:
+        - not fullfil for the available params
+
+-- completion was re-triggered as the current completion list is incomplete.
+3:triggerforincompletecompletions
+    - currently for function:
+        - fullfil for the available params, but can't return & change for the param/s
+--]]
+local TRIGGER_KIND = 3
 
 local COMPLETION_DELAY = 150 -- in milliseconds
 
@@ -6,15 +25,197 @@ local COMPLETION_DELAY = 150 -- in milliseconds
 
 local _buf_default_completion = function(buffer)
     vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
+    vim.opt.shortmess:append("c")
+    vim.opt.wildmode = "longest:full,full"
+    vim.opt.wildignorecase = true
+
     -- completion using default
-    vim.bo[buffer].omnifunc = "v:lua.vim.lsp.omnifunc"
+    -- vim.bo[buffer].omnifunc = "v:lua.vim.lsp.omnifunc"
     -- completion using nvim-prt.cmpltn
-    -- vim.bo[buffer].omnifunc = "v:lua._prt_fuzzy_completion"
+    vim.bo[buffer].omnifunc = "v:lua._prt_fuzzy_completion(0, '')"
 end
 
 local _completion_trigger = function(client, buffer)
-    vim.opt.shortmess:append("c")
     _buf_default_completion(buffer)
+
+    -- manual added using ctrl+space in insert-mode
+    vim.api.nvim_buf_set_keymap(buffer,
+        "i", "<C-space>",
+        -- "<C-x><C-o>",
+        "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
+        {
+            desc = "prt auto completion manual trigger",
+            silent = true,
+            noremap = true
+        }
+    )
+end
+
+local function _get_file_completions()
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+
+    local before_cursor = line:sub(1, col + 1)
+    local path_match = before_cursor:match("([%w%._/\\%-]*)$")
+
+    if not path_match or path_match == "" then
+        return {}
+    end
+
+    local dir_part = vim.fn.fnamemodify(path_match, ":h")
+    local file_part = vim.fn.fnamemodify(path_match, ":t")
+
+    if dir_part == "" then
+        dir_part = "."
+    end
+
+    dir_part = vim.fn.resolve(dir_part)
+
+    if vim.fn.isdirectory(dir_part) == 0 then
+        return {}
+    end
+
+    local glob_pattern = dir_part .. (dir_part:match("[/\\]$") and "*" or "/*")
+    local entries = vim.fn.glob(glob_pattern, true, true)
+
+    local matches = {}
+    local seen = {}
+
+    for _, full_path in ipairs(entries) do
+        local fname = vim.fn.fnamemodify(full_path, ":t")
+
+        if vim.startswith(fname, file_part) then
+            if seen[fname] then goto continue end
+            seen[fname] = true
+
+            local is_dir = vim.fn.isdirectory(full_path) == 1
+            local kind_char = is_dir and "d" or "f"
+            local kind_text = is_dir and "Directory" or "File"
+
+            local display_path = full_path
+            if vim.startswith(full_path, vim.fn.getcwd()) then
+                display_path = vim.fn.fnamemodify(full_path, ":.")
+            end
+
+            local start_char = col - #file_part + 1
+            local end_char = col + 1
+
+            table.insert(matches, {
+                word = fname .. (is_dir and "/" or ""),
+                abbr = display_path,
+                kind = kind_char,
+                menu = kind_text,
+                info = full_path,
+                icase = 1,
+                dup = 0,
+                user_data = {
+                    start_char = start_char - 1,
+                    end_char = end_char - 1
+                }
+            })
+            ::continue::
+        end
+    end
+
+    return matches
+end
+
+local function _get_line_completions()
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+
+    local before_cursor = line:sub(1, col + 1)
+    local query = before_cursor:match("[%w_]*$") or ""
+
+    if query == "" then
+        return {}
+    end
+
+    local matches = {}
+    local seen = {}
+    local start_char = col - #query + 1
+    local end_char = col + 1
+
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if not vim.api.nvim_buf_is_valid(bufnr) then
+            goto continue_buf
+        end
+
+        if bufnr == vim.api.nvim_get_current_buf() then
+            goto continue_buf
+        end
+
+        local buftype = vim.api.nvim_get_option_value("buftype", { buf = bufnr })
+        if buftype ~= "" then
+            goto continue_buf
+        end
+
+        local lines
+        local was_loaded = vim.api.nvim_buf_is_loaded(bufnr)
+
+        if not was_loaded then
+            local bufname = vim.api.nvim_buf_get_name(bufnr)
+            if bufname == "" then
+                goto continue_buf
+            end
+
+            local ok = pcall(function()
+                vim.cmd("silent noautocmd keepalt buffer " .. bufnr)
+            end)
+
+            if not ok or not vim.api.nvim_buf_is_loaded(bufnr) then
+                goto continue_buf
+            end
+
+            lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+            pcall(function()
+                vim.cmd("silent noautocmd bunload " .. bufnr)
+            end)
+        else
+            lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        end
+
+        if not lines then
+            goto continue_buf
+        end
+
+        for _, candidate in ipairs(lines) do
+            --[[
+            NOTE:
+                - find if candidate contains query as a prefix to a word
+                - match does any word in candidate begin with query
+                - the original <C-x><C-l> matches from the beginning of the line
+                - look for the first wordthat matches
+            --]]
+            for word in candidate:gmatch("[%w_]+") do
+                if vim.startswith(word, query) and not seen[word] then
+                    seen[word] = true
+                    local bufname = vim.api.nvim_buf_get_name(bufnr)
+                    local info = bufname ~= "" and vim.fn.fnamemodify(bufname, ":~:.") or ("Buf " .. bufnr)
+
+                    table.insert(matches, {
+                        word = word,
+                        abbr = word,
+                        kind = "l",
+                        menu = "Line",
+                        info = info,
+                        icase = 1,
+                        dup = 0,
+                        user_data = {
+                            start_char = start_char - 1,
+                            end_char = end_char - 1
+                        }
+                    })
+                    break -- 1 match /line
+                end
+            end
+        end
+
+        ::continue_buf::
+    end
+
+    return matches
 end
 
 ---
@@ -28,39 +229,150 @@ TODO:
     - nvim-prt.snppts
 - if there are any parameters of $n (n is number):
     - store it before expand
+NOTE:
+- call complete with extra, i.e.: my_func(${1:param})
+    label:gsub("%b()", "")
+
+- call compelte without extra, i.e.: my_func
+label:gsub("%b().*", "")
 --]]
-_G._prt_fuzzy_completion = function()
+_G._prt_fuzzy_completion = function(findstart, base)
     local _prt = {
         _snippets = require"nvim-prt.snppts"
     }
 
-    -- what?
+    local buf, line, line_text, row, col, cursor, start_char, end_char
+
+    if findstart == 1 then
+        line = vim.fn.getline(".")
+        col = vim.fn.getcol(".")
+        return (line:sub(1, col):find("[%w_]*$") or col) - 1
+    else
+        buf = vim.api.nvim_get_current_buf()
+        cursor = vim.api.nvim_win_get_cursor(0)
+        row, col = cursor[1] - 1, cursor[2]
+        line_text = vim.fn.getline(".")
+
+        -- initial word boundaries
+        start_char = (line_text:sub(1, col):find("[%w_]*$") or col) - 1
+        end_char = col
+
+        -- process text doc completion
+        vim.lsp.buf_request(buf, "textDocument/completion", {
+            textDocument = vim.lsp.util.make_text_document_params(),
+            position = { line = row, character = col },
+            context = { triggerKind = TRIGGER_KIND },
+        }, function(err, result, context)
+            if err or not result then
+                vim.print("cmpltn: error nor result")
+                return
+            end
+
+            local items = result.items or result
+
+            if not items then
+                vim.print("cmpltn: items is empty")
+                return
+            end
+
+            local label
+            local all_matches = {}
+            local lsp_matches = {}
+            local file_matches = {}
+            local line_matches = {}
+
+            for _, item in ipairs(items) do
+                label = item.textEdit and item.textEdit.newText or item.label
+
+                local kind_char, kind_text = "", ""
+
+                if item.kind then
+                    kind_text = vim.lsp.protocol.CompletionItemKind[item.kind] or ""
+                    kind_char = kind_text:sub(1, 1):lower()
+                end
+
+                -- skip determine replacement range
+                local item_start, item_end, word
+
+                -- skip use lsp textEdit range if available
+                if item.textEdit and item.textEdit.range then
+                    item_start = item.textEdit.range.start.character
+                    item_end = item.textEdit.range["end"].character
+                    word = item.textEdit.newText
+                end
+
+                -- validate range for what?
+                item_start = math.max(0, item_start)
+                item_end = math.min(#line_text, item_end)
+
+                -- update data match
+                table.insert(lsp_matches, {
+                    word = label:gsub("%b().*", ""),
+                    abbr = label:gsub("%b().*", ""),
+                    kind = kind_char,
+                    menu = kind_text,
+                    info = item.documentation and (
+                        type(item.documentation) == "string" and item.documentation or (item.documentation.value or "")
+                    ) or "",
+                    icase = 1,
+                    dup = 1,
+                    user_data = {
+                        start_char = item_start,
+                        end_char =  item_end
+                    }
+                })
+            end
+
+            -- matches completion & merge
+            file_matches = _get_file_completions()
+            line_matches = _get_line_completions()
+
+            -- final extend to all match & merge
+            all_matches = vim.list_extend(lsp_matches, file_matches)
+            all_matches = vim.list_extend(all_matches, line_matches)
+
+            -- finished
+            vim.fn.complete(start_char + 1, all_matches)
+        end)
+
+        return {}
+    end
 end
 
 ---
 
 -- default capabilities
 CMPLTN.capabilities = vim.lsp.protocol.make_client_capabilities()
-CMPLTN.capabilities.textDocument.completion = {
-    contextsupport = true,
-    dynamicregistration = true,
-    completionitem = {
-        tagsupport = { valueset = { 1 } },
-        snippetsupport = true,
-        resolvesupport = {
-            properties = { "detail", "documentation", "additionalTextEdits", "snippets" }
-        },
-        preselectsupport = true,
-        deprecatedsupport = true,
-        labeldetailssupport = true,
-        documentationformat = { "markdown", "plaintext" },
-        insertreplacesupport = true,
-        inserttextmodesupport = {
-            valueset = { 1, 2 }
-        },
-        commitcharacterssupport = true,
-    },
-}
+-- CMPLTN.capabilities.textDocument = {
+--     completion = {
+--         contextsupport = true,
+--         dynamicregistration = true,
+--         completionitem = {
+--             -- tagsupport = { valueset = { 1 } },
+--             -- snippetsupport = true,
+--             resolvesupport = {
+--                 properties = { "detail", "documentation", "additionalTextEdits", "snippets" }
+--             },
+--             -- preselectsupport = true,
+--             -- deprecatedsupport = true,
+--             -- labeldetailssupport = true,
+--             documentationformat = { "markdown", "plaintext" },
+--             -- insertreplacesupport = true,
+--             -- inserttextmodesupport = {
+--             --     valueset = { 1, 2 }
+--             -- },
+--             -- commitcharacterssupport = true,
+--         }
+--     },
+--     diagnostic = {
+--         dynamicRegistration = true
+--     },
+--     inlineCompletion = { dynamicRegistration = true }
+-- }
+-- CMPLTN.capabilities.workspace = {
+--     diagnostics = { refreshSupport = true }
+-- }
+
 
 ---
 
@@ -142,7 +454,8 @@ function CMPLTN.default_autocmd(supported_lsps)
             if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        "<C-x><C-o>",
+                        -- "<C-x><C-o>",
+                        "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
                         true, true, true
                     ), "n")
                 end, COMPLETION_DELAY)
@@ -163,7 +476,8 @@ function CMPLTN.default_autocmd(supported_lsps)
             if vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        "<C-x><C-o>",
+                        -- "<C-x><C-o>",
+                        "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
                         true, true, true
                     ), "n")
                 end, COMPLETION_DELAY)

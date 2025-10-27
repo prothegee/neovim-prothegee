@@ -1,19 +1,29 @@
 # neovim-prothegee
 
 __*NOTE:*__
-- this config is:
-    - using vim.pack
-    - meant to use for 0.12.* or above
-- if you want to use this, backup your previous config first
+- using vim.pack
+- meant to use for 0.12.* or above
 
 <br>
 
 ## note
 
-- check this [file](./lua/settings/lsps/init.lua) for lsp/s
 - configured for:
     - c, cpp, cmake
-    - *rust, *go, *js, *ts
+    - ^rust, ^go, ^js, ^ts
+- check [this file](./lua/settings/lsps/init.lua) for lsp/s
+- check [this file](./lua/settings/treesitters/init.lua) for treesitters
+
+<br>
+
+## used plugins
+
+- [gitsigns](https://github.com/lewis6991/gitsigns.nvim)
+- [lspconfig](https://github.com/neovim/nvim-lspconfig)
+- [onedarkpro.nvim](https://github.com/olimorris/onedarkpro.nvim)
+- [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
+
+see [this file](./lua/plugins/init.lua) for more information
 
 <br>
 
@@ -21,6 +31,7 @@ __*NOTE:*__
 
 - [slr](./lua/nvim-prt/slr.lua)
 - [xplrr](./lua/nvim-prt/xplrr.lua)
+- [cmpltn](./lua/nvim-prt/cmpltn.lua)
 
 <br>
 
