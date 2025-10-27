@@ -91,3 +91,21 @@ _G.get_diagnostic_error = function ()
     return total
 end
 
+-- get current work dir with the file buffer
+_G.get_cwd_and_file_buffer = function()
+    local buf_name = vim.api.nvim_buf_get_name(0)
+
+    if buf_name == "" then
+        return "n/a"
+    end
+
+    -- using cwd of vim.fn.getcwd() make full path
+    local relative_path = vim.fn.fnamemodify(buf_name, ":.")
+
+    if relative_path == buf_name then
+        relative_path = vim.fn.fnamemodify(buf_name, ":t")
+    end
+
+    return relative_path
+end
+
