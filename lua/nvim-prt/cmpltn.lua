@@ -35,7 +35,9 @@ local _buf_default_completion = function(buffer)
     vim.bo[buffer].omnifunc = "v:lua._prt_fuzzy_completion(0, '')"
 end
 
-local _completion_trigger = function(client, buffer)
+-- @param _ - client
+-- @param buffer 
+local _completion_trigger = function(_, buffer)
     _buf_default_completion(buffer)
 
     -- manual added using ctrl+space in insert-mode
@@ -212,12 +214,25 @@ local function _handle_complete_done()
         return
     end
 
-    -- error:
-    -- - caused error when insert is force, on:
-    --  - json file
-    local user_data = type(data.user_data) == "string" and vim.json.decode(data.user_data) or data.user_data
+    local user_data = data.user_data
 
-    if not user_data then
+    -- if user_data is a string, it might be json encoded snippet data
+    if type(user_data) == "string" then
+        if user_data == "" then
+            return
+        end
+
+        local ok, decoded = pcall(vim.json.decode, user_data)
+
+        if not ok or type(decoded) ~= "table" then
+            return
+        end
+
+        user_data = decoded
+    elseif type(user_data) ~= "table" then
+        return
+    else
+        vim.print("cmpltn warning: not string nor table")
         return
     end
 
@@ -284,12 +299,10 @@ NOTE:
 
 - call compelte without params, i.e.: my_func
 label:gsub("%b().*", "")
-FATAL:
-- when something pop up from list, and if there's another buffer opened,
-    side by side in any position, it will close current buffer
-    and change active buffer to the other buffer
 --]]
-_G._prt_fuzzy_completion = function(findstart, base)
+-- @param findstart 
+-- @param _ - as base
+_G._prt_fuzzy_completion = function(findstart, _)
     if vim.fn.mode() ~= "i" then
         if findstart == 1 then
             return -1
@@ -326,6 +339,42 @@ _G._prt_fuzzy_completion = function(findstart, base)
         -- initial word boundaries
         start_char = (line_text:sub(1, col):find("[%w_]*$") or col) - 1
         end_char = col
+
+        -- markdown & markdown-oxide case
+        local ft = vim.bo.filetype
+        if ft == "markdown" then
+            local file_matches = _get_file_completions()
+            local line_matches = _get_line_completions()
+            local snippet_matches = {}
+            local all_snippets = _prt._snippets.get_all_snippets_for_filetype()
+
+            for _, snippet in ipairs(all_snippets) do
+                if type(snippet) == "table" and type(snippet.trigger) == "string" and type(snippet.body) == "table" then
+                    table.insert(snippet_matches, {
+                        word = snippet.trigger,
+                        abbr = snippet.trigger,
+                        kind = "s",
+                        menu = snippet.description or "Snippet",
+                        info = table.concat(snippet.body, "\n"),
+                        icase = 1,
+                        dup = 1,
+                        user_data = vim.json.encode({
+                            start_char = start_char,
+                            end_char = end_char,
+                            is_snippet = true,
+                            snippet_body = snippet.body
+                        })
+                    })
+                end
+            end
+
+            local all = vim.list_extend(file_matches, line_matches)
+
+            all = vim.list_extend(all, snippet_matches)
+            vim.fn.complete(start_char + 1, all)
+
+            return {}
+        end
 
         -- process text doc completion
         vim.lsp.buf_request(buf, "textDocument/completion", {
@@ -413,7 +462,7 @@ _G._prt_fuzzy_completion = function(findstart, base)
             end
 
             local all_snippets = _prt._snippets.get_all_snippets_for_filetype()
-            -- TODO: add custom snippets from _prt.snppts
+
             for _, snippet in ipairs(all_snippets) do
                 if type(snippet) == "table" and type(snippet.trigger) == "string" and type(snippet.body) == "table" then
                     local body = table.concat(snippet.body, "\n")
@@ -496,7 +545,9 @@ CMPLTN.capabilities = vim.lsp.protocol.make_client_capabilities()
 ---
 
 -- on init
-function CMPLTN.on_init(client, buffer)
+-- @param client 
+-- @param _ - as buffer
+function CMPLTN.on_init(client, _)
     if client:supports_method("textDocument/semanticTokens") then
         client.server_capabilities.semantictokensprovider = nil
     end
@@ -559,34 +610,16 @@ function CMPLTN.default_autocmd(supported_lsps)
             if buffer_name == "" then return end
 
             CMPLTN.on_attach(client, buffer)
+            CMPLTN.default_completion(buffer)
         end
     })
     -- InsertCharPre
     vim.api.nvim_create_autocmd("InsertCharPre", {
         callback = function(args)
-            -- -- v1
-            -- local buffer = args.buf
-            -- local buffer_name = vim.api.nvim_buf_get_name(buffer)
-            --
-            -- if not vim.api.nvim_buf_is_valid(buffer) then return end
-            -- if buffer_name == "" then return end
-            --
-            -- if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
-            --     vim.defer_fn(function()
-            --         vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-            --             -- "<C-x><C-o>",
-            --             "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
-            --             true, true, true
-            --         ), "n")
-            --     end, COMPLETION_DELAY)
-            -- end
-
-            -- v2
             local buffer = args.buf
 
             if not vim.api.nvim_buf_is_valid(buffer) then return end
             if vim.api.nvim_buf_get_name(buffer) == "" then return end
-            -- if vim.api.nvim_get_current_buf() ~= buffer then return end
 
             if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
@@ -606,33 +639,12 @@ function CMPLTN.default_autocmd(supported_lsps)
     -- TextChangedI
     vim.api.nvim_create_autocmd("TextChangedI", {
         callback = function(args)
-            -- -- v1
-            -- if rejected then return end
-            --
-            -- local buffer = args.buf
-            -- local buffer_name = vim.api.nvim_buf_get_name(buffer)
-            --
-            -- if not vim.api.nvim_buf_is_valid(buffer) then return end
-            -- if buffer_name == "" then return end
-            --
-            -- if vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
-            --     vim.defer_fn(function()
-            --         vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-            --             -- "<C-x><C-o>",
-            --             "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
-            --             true, true, true
-            --         ), "n")
-            --     end, COMPLETION_DELAY)
-            -- end
-
-            -- v2
             if rejected then return end
 
             local buffer = args.buf
 
             if not vim.api.nvim_buf_is_valid(buffer) then return end
             if vim.api.nvim_buf_get_name(buffer) == "" then return end
-            -- if vim.api.nvim_get_current_buf() ~= buffer then return end
 
             if vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
@@ -646,6 +658,33 @@ function CMPLTN.default_autocmd(supported_lsps)
                         ), "n")
                     end
                 end, COMPLETION_DELAY)
+            end
+        end
+    })
+    -- FileType
+    vim.api.nvim_create_autocmd("FileType", {
+        pattern = "*",
+        callback = function(args)
+            local buffer = args.buf
+            if not vim.api.nvim_buf_is_valid(buffer) then return end
+
+            -- set omnifunc without rules
+            _buf_default_completion(buffer)
+
+            vim.api.nvim_buf_set_keymap(buffer,
+                "i", "<C-space>",
+                "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
+                { silent = true, noremap = true }
+            )
+        end
+    })
+    -- BufNewFile & BufRead
+    -- force file .h to c and not cpp
+    vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
+        pattern = "*.h",
+        callback = function()
+            if vim.bo.filetype == "" or vim.bo.filetype == "cpp" then
+                vim.bo.filetype = "c"
             end
         end
     })

@@ -2,9 +2,9 @@ local NVIM_PRT = {}
 
 local version = {
     major = 0,
-    minor = 11,
+    minor = 12,
     patch = 0,
-    dates = 20251027,
+    dates = 20251028,
 }
 
 ---

@@ -15,6 +15,7 @@ local LSPS = {
     "html", "cssls",
     "jsonls",
     "markdown_oxide",
+    "yamlls",
     -- "sqls",
 }
 
@@ -68,16 +69,6 @@ for _, lsp in pairs(LSPS) do
 
     if vim.lsp.config then vim.lsp.config(lsp, ocap) end
 end
-
--- force file .h to c and not cpp
-vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
-    pattern = "*.h",
-    callback = function()
-        if vim.bo.filetype == "" or vim.bo.filetype == "cpp" then
-            vim.bo.filetype = "c"
-        end
-    end
-})
 
 -- default
 vim.lsp.config("*", {
