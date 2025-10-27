@@ -141,6 +141,7 @@ local function _get_line_completions()
             goto continue_buf
         end
 
+        -- skip current buffer dan buffer khusus
         if bufnr == vim.api.nvim_get_current_buf() then
             goto continue_buf
         end
@@ -150,56 +151,35 @@ local function _get_line_completions()
             goto continue_buf
         end
 
-        local lines
-        local was_loaded = vim.api.nvim_buf_is_loaded(bufnr)
-
-        if not was_loaded then
-            local bufname = vim.api.nvim_buf_get_name(bufnr)
-            if bufname == "" then
-                goto continue_buf
-            end
-
-            local ok = pcall(function()
-                vim.cmd("silent noautocmd keepalt buffer " .. bufnr)
-            end)
-
-            if not ok or not vim.api.nvim_buf_is_loaded(bufnr) then
-                goto continue_buf
-            end
-
-            lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-
-            pcall(function()
-                vim.cmd("silent noautocmd bunload " .. bufnr)
-            end)
-        else
-            lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local bufname = vim.api.nvim_buf_get_name(bufnr)
+        if bufname == "" then
+            goto continue_buf
         end
 
-        if not lines then
+        -- ONLY process already loaded buffer
+        -- DO NOT load new buffer
+        if not vim.api.nvim_buf_is_loaded(bufnr) then
+            goto continue_buf
+        end
+
+        -- safe method to read lines without changing the state
+        local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, 0, -1, false)
+        if not ok or not lines then
             goto continue_buf
         end
 
         for _, candidate in ipairs(lines) do
-            --[[
-            NOTE:
-                - find if candidate contains query as a prefix to a word
-                - match does any word in candidate begin with query
-                - the original <C-x><C-l> matches from the beginning of the line
-                - look for the first word that matches
-            --]]
             for word in candidate:gmatch("[%w_]+") do
                 if vim.startswith(word, query) and not seen[word] then
                     seen[word] = true
-                    local bufname = vim.api.nvim_buf_get_name(bufnr)
-                    local info = bufname ~= "" and vim.fn.fnamemodify(bufname, ":~:.") or ("Buf " .. bufnr)
+                    local bufname_display = bufname ~= "" and vim.fn.fnamemodify(bufname, ":~:.") or ("Buf " .. bufnr)
 
                     table.insert(matches, {
                         word = word,
                         abbr = word,
                         kind = "l",
                         menu = "Line",
-                        info = info,
+                        info = bufname_display,
                         icase = 1,
                         dup = 0,
                         user_data = {
@@ -207,7 +187,7 @@ local function _get_line_completions()
                             end_char = end_char - 1
                         }
                     })
-                    break -- 1 match /line
+                    break -- 1 match per line
                 end
             end
         end
@@ -236,6 +216,10 @@ local function _handle_complete_done()
     -- - caused error when insert is force, on:
     --  - json file
     local user_data = type(data.user_data) == "string" and vim.json.decode(data.user_data) or data.user_data
+
+    if not user_data then
+        return
+    end
 
     if not user_data.is_snippet or not user_data.snippet_body then
         return
@@ -306,6 +290,14 @@ FATAL:
     and change active buffer to the other buffer
 --]]
 _G._prt_fuzzy_completion = function(findstart, base)
+    if vim.fn.mode() ~= "i" then
+        if findstart == 1 then
+            return -1
+        else
+            return {}
+        end
+    end
+
     local _prt = {
         _snippets = require"nvim-prt.snppts"
     }
@@ -318,6 +310,15 @@ _G._prt_fuzzy_completion = function(findstart, base)
         return (line:sub(1, col):find("[%w_]*$") or col) - 1
     else
         buf = vim.api.nvim_get_current_buf()
+
+        -- validate buffer
+        if not vim.api.nvim_buf_is_valid(buf) or vim.fn.mode() ~= "i" then
+            return {}
+        end
+
+        -- state current buffer
+        local current_buf = buf
+
         cursor = vim.api.nvim_win_get_cursor(0)
         row, col = cursor[1] - 1, cursor[2]
         line_text = vim.fn.getline(".")
@@ -331,7 +332,12 @@ _G._prt_fuzzy_completion = function(findstart, base)
             textDocument = vim.lsp.util.make_text_document_params(),
             position = { line = row, character = col },
             context = { triggerKind = TRIGGER_KIND },
-        }, function(err, result, context)
+        }, function(err, result, _)
+            -- validate state buf first
+            if not vim.api.nvim_buf_is_valid(current_buf) or vim.api.nvim_get_current_buf() ~= current_buf or vim.fn.mode() ~= "i" then
+                return
+            end
+
             if err or not result then
                 -- vim.print("cmpltn: error nor result") -- ignore tmp print
                 return
@@ -442,8 +448,10 @@ _G._prt_fuzzy_completion = function(findstart, base)
             all_matches = vim.list_extend(all_matches, line_matches)
             all_matches = vim.list_extend(all_matches, snippet_matches)
 
-            -- finished
-            vim.fn.complete(start_char + 1, all_matches)
+            -- finished with validate
+            if vim.api.nvim_get_current_buf() == current_buf and vim.fn.mode() == "i" then
+                vim.fn.complete(start_char + 1, all_matches)
+            end
         end)
 
         return {}
@@ -556,19 +564,41 @@ function CMPLTN.default_autocmd(supported_lsps)
     -- InsertCharPre
     vim.api.nvim_create_autocmd("InsertCharPre", {
         callback = function(args)
+            -- -- v1
+            -- local buffer = args.buf
+            -- local buffer_name = vim.api.nvim_buf_get_name(buffer)
+            --
+            -- if not vim.api.nvim_buf_is_valid(buffer) then return end
+            -- if buffer_name == "" then return end
+            --
+            -- if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
+            --     vim.defer_fn(function()
+            --         vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
+            --             -- "<C-x><C-o>",
+            --             "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
+            --             true, true, true
+            --         ), "n")
+            --     end, COMPLETION_DELAY)
+            -- end
+
+            -- v2
             local buffer = args.buf
-            local buffer_name = vim.api.nvim_buf_get_name(buffer)
 
             if not vim.api.nvim_buf_is_valid(buffer) then return end
-            if buffer_name == "" then return end
+            if vim.api.nvim_buf_get_name(buffer) == "" then return end
+            -- if vim.api.nvim_get_current_buf() ~= buffer then return end
 
             if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
-                    vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        -- "<C-x><C-o>",
-                        "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
-                        true, true, true
-                    ), "n")
+                    -- validate state first, prevent close buffer
+                    if vim.api.nvim_buf_is_valid(buffer) and
+                       vim.api.nvim_get_current_buf() == buffer and
+                       vim.fn.mode() == "i" then
+                        vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
+                            "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
+                            true, true, true
+                        ), "n")
+                    end
                 end, COMPLETION_DELAY)
             end
         end
@@ -576,21 +606,45 @@ function CMPLTN.default_autocmd(supported_lsps)
     -- TextChangedI
     vim.api.nvim_create_autocmd("TextChangedI", {
         callback = function(args)
+            -- -- v1
+            -- if rejected then return end
+            --
+            -- local buffer = args.buf
+            -- local buffer_name = vim.api.nvim_buf_get_name(buffer)
+            --
+            -- if not vim.api.nvim_buf_is_valid(buffer) then return end
+            -- if buffer_name == "" then return end
+            --
+            -- if vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
+            --     vim.defer_fn(function()
+            --         vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
+            --             -- "<C-x><C-o>",
+            --             "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
+            --             true, true, true
+            --         ), "n")
+            --     end, COMPLETION_DELAY)
+            -- end
+
+            -- v2
             if rejected then return end
 
             local buffer = args.buf
-            local buffer_name = vim.api.nvim_buf_get_name(buffer)
 
             if not vim.api.nvim_buf_is_valid(buffer) then return end
-            if buffer_name == "" then return end
+            if vim.api.nvim_buf_get_name(buffer) == "" then return end
+            -- if vim.api.nvim_get_current_buf() ~= buffer then return end
 
             if vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
                 vim.defer_fn(function()
-                    vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        -- "<C-x><C-o>",
-                        "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
-                        true, true, true
-                    ), "n")
+                    -- validate state first, prevent close buffer
+                    if vim.api.nvim_buf_is_valid(buffer) and
+                       vim.api.nvim_get_current_buf() == buffer and
+                       vim.fn.mode() == "i" then
+                        vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
+                            "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
+                            true, true, true
+                        ), "n")
+                    end
                 end, COMPLETION_DELAY)
             end
         end
