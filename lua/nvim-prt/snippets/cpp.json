@@ -15,8 +15,8 @@
             "#endif // REPLACE_HH",
             ""
         ],
-        "trigger": "_include_head_guard_hh",
-        "description": "include head guard hh"
+        "trigger": "_head_guard_hh",
+        "description": "head guard hh"
     },
     {
         "name": "include head guard hpp",
@@ -26,14 +26,14 @@
             "#endif // REPLACE_HPP",
             ""
         ],
-        "trigger": "_include_head_guard_hpp",
-        "description": "include head guard hpp"
+        "trigger": "_head_guard_hpp",
+        "description": "head guard hpp"
     },
     {
         "name": "int main",
         "body": [
             "int main() {",
-            "   return 0;",
+            "    return 0;",
             "}",
             ""
         ],
@@ -44,7 +44,7 @@
         "name": "int main argc argv",
         "body": [
             "int main(int argc, char* argv[]) {",
-            "   return 0;",
+            "    return 0;",
             "}",
             ""
         ],
