@@ -16,6 +16,7 @@ local LSPS = {
     "jsonls",
     "markdown_oxide",
     "yamlls",
+    "bashls",
     -- "sqls",
 }
 

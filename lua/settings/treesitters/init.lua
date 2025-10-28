@@ -14,6 +14,7 @@ local TREESITTERS = {
     "json", "jsonc", "json5",
     "markdown",
     "yaml",
+    "bash",
     "sql",
 }
 
