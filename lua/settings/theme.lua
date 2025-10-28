@@ -1,7 +1,7 @@
 -- vim.opt.winblend = 12
 -- vim.opt.pumblend = 12
-vim.opt.pumwidth = 12
-vim.opt.pumheight = 6
+-- vim.opt.pumwidth = 12
+-- vim.opt.pumheight = 6
 
 ---
 

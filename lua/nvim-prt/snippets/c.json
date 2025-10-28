@@ -15,14 +15,14 @@
             "#endif // REPLACE_H",
             ""
         ],
-        "trigger": "_include_head_guard_h",
-        "description": "include head guard h"
+        "trigger": "_head_guard_h",
+        "description": "head guard h"
     },
     {
         "name": "int main",
         "body": [
             "int main() {",
-            "   return 0;",
+            "    return 0;",
             "}",
             ""
         ],
@@ -33,7 +33,7 @@
         "name": "int main argc argv",
         "body": [
             "int main(int argc, char* argv[]) {",
-            "   return 0;",
+            "    return 0;",
             "}",
             ""
         ],
