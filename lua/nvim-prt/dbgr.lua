@@ -1,10 +1,15 @@
--- ~/.config/nvim/lua/nvim-prt/dbgr.lua
 local DBGR = {}
 
 ---
 
 --[[
-debuger note:
+
+# DBGR
+DeBuGeR
+
+---
+
+NOTE:
 - c & cpp project: gdb or lldb
 - rust project   : rust-gdb or rust-lldb
 - js/ts project  : node or bun or deno?

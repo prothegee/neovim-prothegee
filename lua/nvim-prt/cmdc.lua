@@ -1,5 +1,22 @@
 local CMDC = {}
 
+--[[
+
+# CMDC
+CoMmanD Center
+
+---
+
+IMPORTANT:
+- this tool is not complete
+
+TODO:
+- need to be able add command task inside cwd of .nvim dir, where:
+    - it able to create some bash command at least
+    - maybe do in ${CWD}/.nvim/cmdc.json
+- some manual format config for ${CWD}/.nvim/cmdc.json
+--]]
+
 ---
 
 local config = {
@@ -23,7 +40,7 @@ local state = {
     results = {},
     search_term = "",
     selected_index = 0,
-    all_commands = {},          -- all available commands
+    all_commands = {},           -- all available commands
     extmark_id = nil,            -- for highlighting
     buf_keymaps = {},            -- keymaps to clear
     win_closed_autocmd = nil,    -- window close tracker

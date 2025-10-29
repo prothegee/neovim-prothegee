@@ -1,5 +1,12 @@
 local SNPPTS = {}
 
+--[[
+
+# SNPPTS
+SNiPPeTS
+
+--]]
+
 ---
 
 -- initialize snippets table
