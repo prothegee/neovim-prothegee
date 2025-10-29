@@ -1,5 +1,11 @@
 local CMPLTN = {}
 --[[
+
+# CMPLTN
+CoMPLeTioN
+
+---
+
 -- completion was triggered by typing an identifier (24x7 code
 -- complete), manual invocation (e.g ctrl+space) or via api.
 1:invoked

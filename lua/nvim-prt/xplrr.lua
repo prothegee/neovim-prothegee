@@ -1,5 +1,12 @@
 local XPLRR = {}
 
+--[[
+
+# XPLRR
+eXPLoReR
+
+--]]
+
 ---
 
 local config = {
@@ -25,6 +32,8 @@ local state = {
     mode = "files",             -- "files", "buffers", or "all"
     buf_keymaps = {},           -- stores keymaps to clear later
     win_closed_autocmd = nil,   -- tracks window autocommand
+    is_loading = false,         -- async loading state
+    loading_timer = nil,        -- loading animation timer
 }
 
 local function is_windows()
@@ -47,24 +56,55 @@ local function is_valid_buf(buf)
     return buf and vim.api.nvim_buf_is_valid(buf)
 end
 
+-- Optimized load_ignore_patterns using vim.loop
 local function load_ignore_patterns()
     local ignore_file = state.cwd .. "/.nvimignore"
     local patterns = {}
 
-    local file = io.open(ignore_file, "r")
-    if not file then
+    -- Use vim.loop.fs_open and vim.loop.fs_read for more efficient file operations
+    local fd = vim.loop.fs_open(ignore_file, "r", 438) -- 438 = read mode
+    if not fd then
         return patterns
     end
 
-    for line in file:lines() do
+    local stat, stat_err = vim.loop.fs_fstat(fd)
+    if not stat then
+        vim.loop.fs_close(fd)
+        return patterns
+    end
+
+    local content, read_err = vim.loop.fs_read(fd, stat.size, 0)
+    local close_success, close_err = vim.loop.fs_close(fd)
+
+    if not content then
+        return patterns
+    end
+
+    -- Parse content line by line more efficiently
+    for line in content:gmatch("[^\r\n]+") do
         -- remove comments and trim whitespace
         local clean_line = line:gsub("#.*$", ""):gsub("^%s*(.-)%s*$", "%1")
         if clean_line ~= "" then
-            table.insert(patterns, clean_line)
+            -- Pre-compile patterns for better performance
+            local pattern_info = {
+                original = clean_line,
+                -- Clean pattern for exact matching
+                clean = clean_line:gsub("/+$", ""),
+                -- Flag for directory pattern
+                is_dir_pattern = clean_line:sub(-1) == "/",
+                -- Pre-compile regex for wildcard patterns
+                regex = nil
+            }
+
+            -- Pre-compile regex pattern if there are wildcards
+            if clean_line:find("*") then
+                pattern_info.regex = "^" .. clean_line:gsub("%.", "%%."):gsub("%*", ".*") .. "$"
+            end
+
+            table.insert(patterns, pattern_info)
         end
     end
 
-    file:close()
     return patterns
 end
 
@@ -73,9 +113,9 @@ local function should_ignore(file_path, ignore_patterns)
         return false
     end
 
-    for _, pattern in ipairs(ignore_patterns) do
-        -- clean the pattern (remove trailing slashes for comparison)
-        local clean_pattern = pattern:gsub("/+$", "")
+    for _, pattern_info in ipairs(ignore_patterns) do
+        local pattern = pattern_info.original
+        local clean_pattern = pattern_info.clean
 
         -- exact match for files/directories
         if file_path == clean_pattern then
@@ -83,18 +123,16 @@ local function should_ignore(file_path, ignore_patterns)
         end
 
         -- directory pattern (ends with /) - match directory and its contents
-        if pattern:sub(-1) == "/" then
+        if pattern_info.is_dir_pattern then
             local dir_pattern = pattern:sub(1, -2)
             -- Match directory itself or any file inside it
             if file_path == dir_pattern or file_path:sub(1, #dir_pattern + 1) == dir_pattern .. "/" then
                 return true
             end
         else
-            -- wildcard matching
-            if pattern:find("*") then
-                -- convert wildcard pattern to Lua pattern
-                local regex_pattern = "^" .. pattern:gsub("%.", "%%."):gsub("%*", ".*") .. "$"
-                if file_path:match(regex_pattern) then
+            -- wildcard matching with pre-compiled regex
+            if pattern_info.regex then
+                if file_path:match(pattern_info.regex) then
                     return true
                 end
             end
@@ -109,53 +147,92 @@ local function should_ignore(file_path, ignore_patterns)
     return false
 end
 
-local function scan_directory(dir, use_ignore)
+-- Async directory scanning function
+local function scan_directory_async(dir, use_ignore, callback)
     local files = {}
     local ignore_patterns = use_ignore and load_ignore_patterns() or {}
 
-    local function scan_recursive(current_dir)
-        local handle, err = vim.loop.fs_scandir(current_dir)
-        if not handle then
-            -- silently skip directories we can't access
-            if err:match("Permission denied") then
-                return
-            else
-                vim.notify("Error scanning directory: " .. err, vim.log.levels.WARN)
-                return
-            end
-        end
+    state.is_loading = true
 
-        while true do
-            local name, type = vim.loop.fs_scandir_next(handle)
-            if not name then break end
-
-            local full_path = current_dir .. "/" .. name
-            local rel_path = full_path:sub(#state.cwd + 2) -- +2 to remove leading slash
-
-            -- skip hidden files if not configured to show them
-            if not config.hidden and name:sub(1, 1) == "." then
-                goto continue
-            end
-
-            if type == "file" then
-                -- check if file should be ignored
-                if not should_ignore(rel_path, ignore_patterns) then
-                    table.insert(files, rel_path)
-                end
-            elseif type == "directory" then
-                -- check if directory should be ignored
-                if not should_ignore(rel_path, ignore_patterns) then
-                    -- recursively scan subdirectory
-                    scan_recursive(full_path)
-                end
-            end
-
-            ::continue::
-        end
+    -- Show loading message
+    if is_valid_buf(state.buf) then
+        vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, {"Loading files..."})
     end
 
-    scan_recursive(dir)
-    return files
+    local function scan_recursive(current_dir, on_complete)
+        vim.schedule(function()
+            local handle, err = vim.loop.fs_scandir(current_dir)
+            if not handle then
+                if err and err:match("Permission denied") then
+                    on_complete()
+                    return
+                else
+                    if err then
+                        vim.notify("Error scanning directory: " .. err, vim.log.levels.WARN)
+                    end
+                    on_complete()
+                    return
+                end
+            end
+
+            local function process_next()
+                local name, fs_type = vim.loop.fs_scandir_next(handle)
+                if not name then
+                    on_complete()
+                    return
+                end
+
+                local full_path = current_dir .. "/" .. name
+                local rel_path = full_path:sub(#state.cwd + 2)
+
+                -- skip hidden files if not configured to show them
+                if not config.hidden and name:sub(1, 1) == "." then
+                    return process_next()
+                end
+
+                if fs_type == "file" then
+                    -- check if file should be ignored
+                    if not should_ignore(rel_path, ignore_patterns) then
+                        table.insert(files, rel_path)
+
+                        -- Update UI periodically to provide feedback
+                        if #files % 100 == 0 then
+                            vim.schedule(function()
+                                if is_valid_buf(state.buf) and state.is_loading then
+                                    local display_lines = {"Loading files... (" .. #files .. " found)"}
+                                    vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, display_lines)
+                                end
+                            end)
+                        end
+                    end
+                    process_next()
+                elseif fs_type == "directory" then
+                    -- check if directory should be ignored
+                    if not should_ignore(rel_path, ignore_patterns) then
+                        -- recursively scan subdirectory
+                        scan_recursive(full_path, function()
+                            process_next()
+                        end)
+                    else
+                        process_next()
+                    end
+                else
+                    process_next()
+                end
+            end
+
+            process_next()
+        end)
+    end
+
+    scan_recursive(dir, function()
+        state.is_loading = false
+        if state.loading_timer then
+            pcall(function() state.loading_timer:close() end)
+            state.loading_timer = nil
+        end
+        callback(files)
+    end)
 end
 
 local function get_open_buffers(use_ignore)
@@ -330,25 +407,29 @@ local function update_display()
 
     -- clear previous highlight
     if state.extmark_id then
-        vim.api.nvim_buf_del_extmark(state.buf, config.highlight_ns, state.extmark_id)
+        pcall(vim.api.nvim_buf_del_extmark, state.buf, config.highlight_ns, state.extmark_id)
         state.extmark_id = nil
     end
 
     -- highlight active line with full-width block
     if state.selected_index > 0 then
         local line_index = state.header_lines + state.selected_index - 1
-        state.extmark_id = vim.api.nvim_buf_set_extmark(
-            state.buf,
-            config.highlight_ns,
-            line_index,     -- line number (0-based)
-            0,              -- starting column
-            {
-                hl_group = "visual",
-                end_line = line_index + 1,
-                end_col = 0,                -- 0 = start of next line
-                priority = 100,             -- ensure it's above syntax hightlight
-            }
-        )
+        -- Ensure line_index is within buffer bounds
+        local line_count = vim.api.nvim_buf_line_count(state.buf)
+        if line_index < line_count then
+            state.extmark_id = vim.api.nvim_buf_set_extmark(
+                state.buf,
+                config.highlight_ns,
+                line_index,     -- line number (0-based)
+                0,              -- starting column
+                {
+                    hl_group = "visual",
+                    end_line = line_index + 1,
+                    end_col = 0,                -- 0 = start of next line
+                    priority = 100,             -- ensure it's above syntax hightlight
+                }
+            )
+        end
     end
 end
 
@@ -361,7 +442,7 @@ local function close_window()
 
     -- clear highlight
     if state.extmark_id and is_valid_buf(state.buf) then
-        vim.api.nvim_buf_del_extmark(state.buf, config.highlight_ns, state.extmark_id)
+        pcall(vim.api.nvim_buf_del_extmark, state.buf, config.highlight_ns, state.extmark_id)
     end
 
     -- remove all keymaps we created
@@ -380,6 +461,7 @@ local function close_window()
     state.buf = nil
     state.win = nil
     state.extmark_id = nil
+    state.is_loading = false
 
     -- ensure we're back in normal mode
     vim.api.nvim_command("stopinsert")
@@ -389,93 +471,8 @@ local function close_window()
     end
 end
 
-local function create_window(mode)
-    if state.win and vim.api.nvim_win_is_valid(state.win) then
-        return
-    end
-
-    -- remember original window
-    state.original_win = vim.api.nvim_get_current_win()
-    state.mode = mode or "files"
-
-    -- create buffer
-    state.buf = vim.api.nvim_create_buf(false, true)
-    if not is_valid_buf(state.buf) then
-        vim.notify("failed to create XPLRR buffer", vim.log.levels.ERROR)
-        return
-    end
-
-    -- get files based on mode
-    state.cwd = vim.fn.getcwd()
-    if mode == "buffers" then
-        state.all_files = get_open_buffers(false) -- don't use ignore for buffers mode
-    elseif mode == "files" then
-        -- combine files from directory (with ignore) and buffers (without ignore)
-        local dir_files = scan_directory(state.cwd, true) -- use ignore for directory files
-        local buffer_files = get_open_buffers(false) -- don't use ignore for buffers
-
-        -- merge and remove duplicates
-        local all_files_map = {}
-        for _, file in ipairs(dir_files) do
-            all_files_map[file] = true
-        end
-        for _, file in ipairs(buffer_files) do
-            all_files_map[file] = true
-        end
-
-        state.all_files = {}
-        for file, _ in pairs(all_files_map) do
-            table.insert(state.all_files, file)
-        end
-        table.sort(state.all_files)
-    else
-        state.all_files = scan_directory(state.cwd, false) -- don't use ignore for regular files mode
-    end
-
-    state.search_term = ""
-    state.selected_index = 0
-    update_results()
-
-    -- window dimensions
-    local width = math.floor(vim.o.columns * 0.9)
-    local height = math.floor(vim.o.lines * 0.6)
-
-    -- window options
-    local title = "XPLRR"
-    if state.mode == "files" then
-        title = "XPLRR"
-    elseif state.mode == "buffers" then
-        title = "XPLRR Buffers"
-    elseif state.mode == "all" then
-        title = "XPLRR All"
-    end
-
-    local win_opts = {
-        relative = "editor",
-        width = width,
-        height = height,
-        col = (vim.o.columns - width) / 2,
-        row = (vim.o.lines - height) / 2,
-        style = "minimal",
-        border = config.border,
-        title = title,
-        title_pos = "center",
-    }
-
-    -- create window
-    state.win = vim.api.nvim_open_win(state.buf, true, win_opts)
-    if not state.win or not vim.api.nvim_win_is_valid(state.win) then
-        vim.notify("failed to create XPLRR window", vim.log.levels.ERROR)
-        return
-    end
-
-    -- set buffer options
-    vim.bo[state.buf].buftype = "nofile"
-    vim.bo[state.buf].filetype = "xplrr"
-    vim.bo[state.buf].omnifunc = "v:lua.vim.lsp.omnifunc"  -- prevent E764
-    vim.bo[state.buf].swapfile = false
-    vim.bo[state.buf].bufhidden = "wipe"
-
+-- Setup keymaps and UI components
+local function setup_keymaps_and_ui()
     -- navigation functions
     --- move up
     local function move_up()
@@ -485,7 +482,11 @@ local function create_window(mode)
             -- move from first file to search input
             state.selected_index = 0
             update_display()
-            vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+            -- Ensure cursor position is valid
+            local line_count = vim.api.nvim_buf_line_count(state.buf)
+            if state.header_lines <= line_count then
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1]:len())})
+            end
             vim.api.nvim_command("startinsert")
 
             -- ensure header is visible
@@ -494,8 +495,12 @@ local function create_window(mode)
             -- move up in file list
             state.selected_index = state.selected_index - 1
             update_display()
-            -- corrected line index calculation
-            vim.api.nvim_win_set_cursor(state.win, {state.selected_index + state.header_lines, 0})
+            -- corrected line index calculation with bounds check
+            local target_line = state.selected_index + state.header_lines
+            local line_count = vim.api.nvim_buf_line_count(state.buf)
+            if target_line <= line_count then
+                vim.api.nvim_win_set_cursor(state.win, {target_line, 0})
+            end
 
             -- keep header in view when near top
             if state.selected_index == 1 then
@@ -510,14 +515,22 @@ local function create_window(mode)
             if #state.results > 0 then
                 state.selected_index = 1
                 update_display()
-                vim.api.nvim_win_set_cursor(state.win, {state.header_lines + state.selected_index - 1, 0})
+                local target_line = state.header_lines + state.selected_index - 1
+                local line_count = vim.api.nvim_buf_line_count(state.buf)
+                if target_line <= line_count then
+                    vim.api.nvim_win_set_cursor(state.win, {target_line, 0})
+                end
                 vim.fn.winrestview({topline = 1})
             end
         elseif state.selected_index < #state.results then
             -- move down in file list
             state.selected_index = state.selected_index + 1
             update_display()
-            vim.api.nvim_win_set_cursor(state.win, {state.selected_index + state.header_lines, 0})
+            local target_line = state.selected_index + state.header_lines
+            local line_count = vim.api.nvim_buf_line_count(state.buf)
+            if target_line <= line_count then
+                vim.api.nvim_win_set_cursor(state.win, {target_line, 0})
+            end
 
             -- ensure header is visible
             vim.fn.winrestview({topline = 1})
@@ -609,10 +622,18 @@ local function create_window(mode)
                 state.search_term = state.search_term .. char
                 update_results()
                 update_display()
-                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+                local line_count = vim.api.nvim_buf_line_count(state.buf)
+                if state.header_lines <= line_count then
+                    local line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
+                    vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, line_content:len())})
+                end
                 vim.api.nvim_command("startinsert")
             else
-                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+                local line_count = vim.api.nvim_buf_line_count(state.buf)
+                if state.header_lines <= line_count then
+                    local line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
+                    vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, line_content:len())})
+                end
                 vim.api.nvim_command("startinsert")
                 vim.api.nvim_feedkeys(char, 'i', false)
             end
@@ -623,17 +644,31 @@ local function create_window(mode)
     end
 
     local function restrict_cursor()
+        if not is_valid_buf(state.buf) or not vim.api.nvim_win_is_valid(state.win) then
+            return
+        end
+
         local cursor = vim.api.nvim_win_get_cursor(state.win)
         local line, col = cursor[1], cursor[2]
+        local line_count = vim.api.nvim_buf_line_count(state.buf)
+
+        -- Ensure cursor is within valid range
+        if line < 1 then line = 1 end
+        if line > line_count then line = line_count end
 
         -- second line is index 1 (0-indexed)
         if line == 1 and col < 2 then
-            vim.api.nvim_win_set_cursor(state.win, {2, 2})
+            if line_count >= 2 then
+                vim.api.nvim_win_set_cursor(state.win, {2, 2})
+            end
         end
 
-        -- disable cursor movement in file list
-        if line > 1 and state.selected_index == 0 then
-            vim.api.nvim_win_set_cursor(state.win, {2, #state.search_term + 2})
+        -- disable cursor movement in file list when in search mode
+        if line > state.header_lines and state.selected_index == 0 then
+            if state.header_lines <= line_count then
+                local search_line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, search_line_content:len())})
+            end
         end
     end
 
@@ -649,9 +684,13 @@ local function create_window(mode)
                     update_results()
                     update_display()
 
-                    -- keep cursor in search input
+                    -- keep cursor in search input with bounds check
                     if state.selected_index == 0 then
-                        vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+                        local line_count = vim.api.nvim_buf_line_count(state.buf)
+                        if state.header_lines <= line_count then
+                            local line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
+                            vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, line_content:len())})
+                        end
                     end
                 end
             end
@@ -672,20 +711,143 @@ local function create_window(mode)
             if #line < 2 or line:sub(1,2) ~= "> " then
                 -- restore prefix if modified
                 vim.api.nvim_set_current_line("> " .. state.search_term)
-                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+                local line_count = vim.api.nvim_buf_line_count(state.buf)
+                if state.header_lines <= line_count then
+                    local line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
+                    vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, line_content:len())})
+                end
             end
         end
     })
+end
 
-    -- initial display
-    update_display()
-    vim.api.nvim_command("startinsert")
-    vim.api.nvim_win_set_cursor(state.win, {state.header_lines, #state.search_term + 2})
+local function create_window(mode)
+    if state.win and vim.api.nvim_win_is_valid(state.win) then
+        return
+    end
 
-    vim.schedule(function()
-        local mode_msg = state.mode == "files" and "files" or state.mode == "buffers" and "buffers" or "all files and buffers"
-        vim.notify("XPLRR " .. mode_msg .. ": press ctrl+q to exit")
-    end)
+    -- remember original window
+    state.original_win = vim.api.nvim_get_current_win()
+    state.mode = mode or "files"
+
+    -- create buffer
+    state.buf = vim.api.nvim_create_buf(false, true)
+    if not is_valid_buf(state.buf) then
+        vim.notify("failed to create XPLRR buffer", vim.log.levels.ERROR)
+        return
+    end
+
+    -- Setup window dan UI terlebih dahulu
+    local width = math.floor(vim.o.columns * 0.9)
+    local height = math.floor(vim.o.lines * 0.6)
+
+    local title = "XPLRR"
+    if state.mode == "files" then
+        title = "XPLRR"
+    elseif state.mode == "buffers" then
+        title = "XPLRR Buffers"
+    elseif state.mode == "all" then
+        title = "XPLRR All"
+    end
+
+    local win_opts = {
+        relative = "editor",
+        width = width,
+        height = height,
+        col = (vim.o.columns - width) / 2,
+        row = (vim.o.lines - height) / 2,
+        style = "minimal",
+        border = config.border,
+        title = title,
+        title_pos = "center",
+    }
+
+    state.win = vim.api.nvim_open_win(state.buf, true, win_opts)
+    if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+        vim.notify("failed to create XPLRR window", vim.log.levels.ERROR)
+        return
+    end
+
+    -- Set buffer options
+    vim.bo[state.buf].buftype = "nofile"
+    vim.bo[state.buf].filetype = "xplrr"
+    vim.bo[state.buf].swapfile = false
+    vim.bo[state.buf].bufhidden = "wipe"
+
+    -- Setup keymaps dan UI dasar
+    setup_keymaps_and_ui()
+
+    -- Load files berdasarkan mode secara async
+    state.cwd = vim.fn.getcwd()
+
+    if mode == "buffers" then
+        -- Buffers mode tetap sync karena cepat
+        state.all_files = get_open_buffers(false)
+        state.search_term = ""
+        state.selected_index = 0
+        update_results()
+        update_display()
+        vim.api.nvim_command("startinsert")
+        local line_count = vim.api.nvim_buf_line_count(state.buf)
+        if state.header_lines <= line_count then
+            local line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
+            vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, line_content:len())})
+        end
+
+        vim.schedule(function()
+            local mode_msg = state.mode == "files" and "files" or state.mode == "buffers" and "buffers" or "all files and buffers"
+            vim.notify("XPLRR " .. mode_msg .. ": press ctrl+q to exit")
+        end)
+    else
+        -- Untuk files mode, gunakan async
+        vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, {"Loading files..."})
+
+        local files_callback = function(files)
+            if mode == "files" then
+                -- Combine files dari directory (dengan ignore) dan buffers (tanpa ignore)
+                local buffer_files = get_open_buffers(false)
+
+                -- Merge dan remove duplicates
+                local all_files_map = {}
+                for _, file in ipairs(files) do
+                    all_files_map[file] = true
+                end
+                for _, file in ipairs(buffer_files) do
+                    all_files_map[file] = true
+                end
+
+                state.all_files = {}
+                for file, _ in pairs(all_files_map) do
+                    table.insert(state.all_files, file)
+                end
+                table.sort(state.all_files)
+            else
+                state.all_files = files
+            end
+
+            state.search_term = ""
+            state.selected_index = 0
+            update_results()
+            update_display()
+            vim.api.nvim_command("startinsert")
+            local line_count = vim.api.nvim_buf_line_count(state.buf)
+            if state.header_lines <= line_count then
+                local line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
+                vim.api.nvim_win_set_cursor(state.win, {state.header_lines, math.min(#state.search_term + 2, line_content:len())})
+            end
+
+            vim.schedule(function()
+                local mode_msg = state.mode == "files" and "files" or state.mode == "buffers" and "buffers" or "all files and buffers"
+                vim.notify("XPLRR " .. mode_msg .. ": " .. #state.all_files .. " files found, press ctrl+q to exit")
+            end)
+        end
+
+        if mode == "all" then
+            scan_directory_async(state.cwd, false, files_callback)
+        else -- files mode
+            scan_directory_async(state.cwd, true, files_callback)
+        end
+    end
 end
 
 ---
