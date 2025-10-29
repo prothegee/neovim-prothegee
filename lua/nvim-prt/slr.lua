@@ -1,9 +1,22 @@
-local SLR = {}
+SLR = {}
 
 --[[
 
 # SLR
 Search List Replace
+
+---
+
+CHECK:
+[X] SlrBuffer
+[ ] SlrDirectory
+[ ] SlrInDirectory
+
+---
+
+TODO:
+- need to be able read whitespace and replace with whitespace using double quote
+- some sign of `/` can't be read and replace
 
 --]]
 
@@ -161,10 +174,9 @@ local function process_files(files, search, replace, flags)
     vim.notify("replaced in " .. processed .. " files", vim.log.levels.INFO)
 end
 
--- parse command arguments
+-- parse command arguments dengan handling quotes yang benar
 local function parse_args(fargs)
     local flags = { sensitive = false, exact = false, dir = nil }
-    local search, replace
     local i = 1
 
     -- parse flags first
@@ -185,25 +197,59 @@ local function parse_args(fargs)
         end
     end
 
-    -- get search and replace terms
-    if i <= #fargs then search = fargs[i] end
-    if i + 1 <= #fargs then replace = fargs[i + 1] end
-
-    if not search or not replace then
+    -- no args s/r left
+    if i > #fargs then
         return nil, "missing search or replace terms"
     end
 
-    -- remove surrounding quotes but preserve escaped characters
-    search = search:gsub("^['\"](.*)['\"]$", "%1")
-    replace = replace:gsub("^['\"](.*)['\"]$", "%1")
+    -- combined all args to be as 1 string
+    local remaining_args = {}
+    for j = i, #fargs do
+        table.insert(remaining_args, fargs[j])
+    end
+    local args_string = table.concat(remaining_args, " ")
 
-    -- handle escaped characters
-    search = search:gsub("\\(.)", "%1")
-    replace = replace:gsub("\\(.)", "%1")
+    local search_match, replace_match
+
+    -- find first quote: search
+    local first_quote = args_string:match('^%s*(["\'])')
+    if first_quote then
+        local pattern = '^%s*' .. first_quote .. '(.-)' .. first_quote .. '%s*(.*)'
+        search_match, args_string = args_string:match(pattern)
+        if not search_match then
+            return nil, "invalid quoted search term"
+        end
+    else
+        -- if quote, take first word
+        search_match = args_string:match('^%s*(%S+)%s*(.*)')
+        args_string = args_string:match('^%s*%S+%s*(.*)') or ""
+    end
+
+    -- find second quote: replace
+    if args_string and #args_string > 0 then
+        local first_quote_replace = args_string:match('^%s*(["\'])')
+        if first_quote_replace then
+            local pattern = '^%s*' .. first_quote_replace .. '(.-)' .. first_quote_replace .. '%s*$'
+            replace_match = args_string:match(pattern)
+            if not replace_match then
+                return nil, "invalid quoted replace term"
+            end
+        else
+            -- if quotes, take the next char for replacement
+            replace_match = args_string:match('^%s*(%S+)%s*$')
+        end
+    end
+
+    if not search_match or not replace_match then
+        return nil, "missing search or replace terms"
+    end
+
+    -- -- debug: print the processed arguments
+    -- vim.notify("DEBUG - processed search: '" .. search_match .. "', processed replace: '" .. replace_match .. "'", vim.log.levels.INFO)
 
     return {
-        search = search,
-        replace = replace,
+        search = search_match,
+        replace = replace_match,
         flags = flags
     }
 end
