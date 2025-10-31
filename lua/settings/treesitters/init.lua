@@ -6,6 +6,7 @@ local TREESITTERS = {
     "c", "cpp", "cmake",
     "rust",
     "go",
+    "ziggy", "ziggy_schema",
     "javascript", "typescript",
     "svelte",
     "gdscript", "gdshader",
