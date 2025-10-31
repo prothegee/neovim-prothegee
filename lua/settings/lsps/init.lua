@@ -9,6 +9,7 @@ local LSPS = {
     "rust_analyzer",
     "gopls",
     "ts_ls",
+    "ziggy", "ziggy_schema",
     "svelte",
     "gdscript", "gdshader_lsp",
     "pyright",

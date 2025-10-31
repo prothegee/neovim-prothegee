@@ -10,7 +10,7 @@ __*NOTE:*__
 
 - configured for:
     - c, cpp, cmake
-    - ^rust, ^go, ^js, ^ts,
+    - ^rust, ^go, ^zig, ^js, ^ts,
     - ^html, ^css, ^scss
 - check [this file](./lua/settings/lsps/init.lua) for lsp/s
 - check [this file](./lua/settings/treesitters/init.lua) for treesitters
