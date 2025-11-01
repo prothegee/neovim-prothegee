@@ -31,8 +31,20 @@ see [this file](./lua/plugins/init.lua) for more information
 ## modules
 
 - [slr](./lua/nvim-prt/slr.lua)
+
 - [xplrr](./lua/nvim-prt/xplrr.lua)
+
 - [cmpltn](./lua/nvim-prt/cmpltn.lua)
+
+<br>
+
+## default keymap/shortcut
+
+- `<C-S-t>` e.q. `ctrl+shift+t`:
+    - open/close bottom terminal
+
+- `<C-S-A-t>` e.q. `ctrl+shift+alt+t`:
+    - create empty new tab
 
 <br>
 
