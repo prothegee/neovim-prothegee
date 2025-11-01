@@ -10,10 +10,10 @@ DeBuGeR
 ---
 
 NOTE:
-- c & cpp project: gdb or lldb
+- c & cpp project: gdb / lldb
 - rust project   : rust-gdb or rust-lldb
-- js/ts project  : node or bun or deno?
-- go project     : ?
+- js/ts project  : node or bun or deno
+- go project     : cgdb
 --]]
 
 ---
@@ -24,7 +24,13 @@ DBGR.template = {
     "version": "0.2.0",
     "configurations": [
         // {
-        //     "name": "Cpp Sample",
+        //     "name": "C Example",
+        //     "type": "c",
+        //     "program": "${workspaceFolder}/build/debug/app_c",
+        //     "debugger": "gdb"
+        // },
+        // {
+        //     "name": "Cpp Example",
         //     "type": "cpp",
         //     "program": "${workspaceFolder}/build/debug/app_cpp",
         //     "debugger": "gdb"
@@ -34,6 +40,12 @@ DBGR.template = {
         //     "type": "rust",
         //     "program": "${workspaceFolder}/target/debug/app_rust",
         //     "debugger": "lldb"
+        // },
+        // {
+        //     "name": "Bun Example",
+        //     "type": "bun",
+        //     "program": "${workspaceFolder}/app_javascript.js",
+        //     "debugger": "bun"
         // },
         // {
         //     "name": "Node Example",
@@ -52,7 +64,7 @@ DBGR.template = {
         {
             "name": "Full System",
             "configurations": [
-                // "Cpp Sample", "Rust Example", "Node Example", "Go Example"
+                // "C Example", "Cpp Example", "Rust Example", "Bun Example", "Node Example", "Go Example"
             ]
         }
     ]
