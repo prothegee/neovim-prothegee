@@ -240,7 +240,7 @@ local function create_window()
     end
 
     -- window dimensions
-    local width = math.floor(vim.o.columns * 0.7)
+    local width = math.floor(vim.o.columns * 0.9)
     local height = math.floor(vim.o.lines * 0.6)
 
     -- window options
