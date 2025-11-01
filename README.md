@@ -40,10 +40,10 @@ see [this file](./lua/plugins/init.lua) for more information
 
 ## default keymap/shortcut
 
-- `<C-S-t>` e.q. `ctrl+shift+t`:
+- `<C-A-t>` e.q. `ctrl+altt+t`:
     - open/close bottom terminal
 
-- `<C-S-A-t>` e.q. `ctrl+shift+alt+t`:
+- `<C-A-S-t>` e.q. `ctrl+alt+shift+t`:
     - create empty new tab
 
 <br>

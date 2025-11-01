@@ -12,7 +12,7 @@ end
 -- - terminal
 vim.keymap.set(
     { "n", "i", "v", "t" },
-    "<C-S-A-t>",
+    "<C-A-S-t>",
     create_empty_new_tab,
     {
         desc = "create empty new tab (mode: n, i, v, t)"
