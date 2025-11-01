@@ -61,13 +61,16 @@ local function open_terminal_horizontal()
     end
 end
 
+---
+
 -- integrated terminal
 --- horizontal
 vim.keymap.set(
     { "n", "i", "v", "t" },
-    "<C-A-t>",
+    "<C-S-t>",
     open_terminal_horizontal,
     {
-        desc = "terminal horizontal"
+        desc = "terminal horizontal (mode: n, i, v, t)"
     }
 )
+
