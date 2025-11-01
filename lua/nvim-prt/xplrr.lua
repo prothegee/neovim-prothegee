@@ -56,12 +56,11 @@ local function is_valid_buf(buf)
     return buf and vim.api.nvim_buf_is_valid(buf)
 end
 
--- Optimized load_ignore_patterns using vim.loop
 local function load_ignore_patterns()
     local ignore_file = state.cwd .. "/.nvimignore"
     local patterns = {}
 
-    -- Use vim.loop.fs_open and vim.loop.fs_read for more efficient file operations
+    -- use vim.loop.fs_open and vim.loop.fs_read for more efficient file operations
     local fd = vim.loop.fs_open(ignore_file, "r", 438) -- 438 = read mode
     if not fd then
         return patterns
@@ -80,23 +79,23 @@ local function load_ignore_patterns()
         return patterns
     end
 
-    -- Parse content line by line more efficiently
+    -- parse content line by line more efficiently
     for line in content:gmatch("[^\r\n]+") do
         -- remove comments and trim whitespace
         local clean_line = line:gsub("#.*$", ""):gsub("^%s*(.-)%s*$", "%1")
         if clean_line ~= "" then
-            -- Pre-compile patterns for better performance
+            -- pre-compile patterns for better performance
             local pattern_info = {
                 original = clean_line,
-                -- Clean pattern for exact matching
+                -- clean pattern for exact matching
                 clean = clean_line:gsub("/+$", ""),
-                -- Flag for directory pattern
+                -- flag for directory pattern
                 is_dir_pattern = clean_line:sub(-1) == "/",
-                -- Pre-compile regex for wildcard patterns
+                -- pre-compile regex for wildcard patterns
                 regex = nil
             }
 
-            -- Pre-compile regex pattern if there are wildcards
+            -- pre-compile regex pattern if there are wildcards
             if clean_line:find("*") then
                 pattern_info.regex = "^" .. clean_line:gsub("%.", "%%."):gsub("%*", ".*") .. "$"
             end
@@ -147,14 +146,13 @@ local function should_ignore(file_path, ignore_patterns)
     return false
 end
 
--- Async directory scanning function
 local function scan_directory_async(dir, use_ignore, callback)
     local files = {}
     local ignore_patterns = use_ignore and load_ignore_patterns() or {}
 
     state.is_loading = true
 
-    -- Show loading message
+    -- show loading message
     if is_valid_buf(state.buf) then
         vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, {"Loading files..."})
     end
@@ -195,7 +193,7 @@ local function scan_directory_async(dir, use_ignore, callback)
                     if not should_ignore(rel_path, ignore_patterns) then
                         table.insert(files, rel_path)
 
-                        -- Update UI periodically to provide feedback
+                        -- update UI periodically to provide feedback
                         if #files % 100 == 0 then
                             vim.schedule(function()
                                 if is_valid_buf(state.buf) and state.is_loading then
@@ -737,9 +735,8 @@ local function create_window(mode)
         return
     end
 
-    -- Setup window dan UI terlebih dahulu
-    local width = math.floor(vim.o.columns * 0.9)
-    local height = math.floor(vim.o.lines * 0.6)
+    local width = math.floor(vim.o.columns * 0.87)
+    local height = math.floor(vim.o.lines * 0.87)
 
     local title = "XPLRR"
     if state.mode == "files" then
@@ -768,20 +765,20 @@ local function create_window(mode)
         return
     end
 
-    -- Set buffer options
+    -- set buffer options
     vim.bo[state.buf].buftype = "nofile"
     vim.bo[state.buf].filetype = "xplrr"
     vim.bo[state.buf].swapfile = false
     vim.bo[state.buf].bufhidden = "wipe"
 
-    -- Setup keymaps dan UI dasar
+    -- setup keymaps dan UI dasar
     setup_keymaps_and_ui()
 
-    -- Load files berdasarkan mode secara async
+    -- load files berdasarkan mode secara async
     state.cwd = vim.fn.getcwd()
 
     if mode == "buffers" then
-        -- Buffers mode tetap sync karena cepat
+        -- buffers mode still sync since fast
         state.all_files = get_open_buffers(false)
         state.search_term = ""
         state.selected_index = 0
@@ -799,15 +796,15 @@ local function create_window(mode)
             vim.notify("XPLRR " .. mode_msg .. ": press ctrl+q to exit")
         end)
     else
-        -- Untuk files mode, gunakan async
+        -- for files mode, use async
         vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, {"Loading files..."})
 
         local files_callback = function(files)
             if mode == "files" then
-                -- Combine files dari directory (dengan ignore) dan buffers (tanpa ignore)
+                -- clombine files dari directory (dengan ignore) dan buffers (tanpa ignore)
                 local buffer_files = get_open_buffers(false)
 
-                -- Merge dan remove duplicates
+                -- merge dan remove duplicates
                 local all_files_map = {}
                 for _, file in ipairs(files) do
                     all_files_map[file] = true
