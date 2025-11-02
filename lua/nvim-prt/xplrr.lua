@@ -12,7 +12,7 @@ eXPLoReR
 local config = {
     hidden = true,
     follow_symlinks = false,
-    max_results = 1024,
+    max_results = 8192, -- shouldn't larger than this
     border = "rounded",
     highlight_ns = vim.api.nvim_create_namespace("XPLRR_HL"),
 }
@@ -33,7 +33,6 @@ local state = {
     buf_keymaps = {},           -- stores keymaps to clear later
     win_closed_autocmd = nil,   -- tracks window autocommand
     is_loading = false,         -- async loading state
-    loading_timer = nil,        -- loading animation timer
 }
 
 local function is_windows()
@@ -60,42 +59,34 @@ local function load_ignore_patterns()
     local ignore_file = state.cwd .. "/.nvimignore"
     local patterns = {}
 
-    -- use vim.loop.fs_open and vim.loop.fs_read for more efficient file operations
-    local fd = vim.loop.fs_open(ignore_file, "r", 438) -- 438 = read mode
+    local fd = vim.loop.fs_open(ignore_file, "r", 438)
     if not fd then
         return patterns
     end
 
-    local stat, stat_err = vim.loop.fs_fstat(fd)
+    local stat = vim.loop.fs_fstat(fd)
     if not stat then
         vim.loop.fs_close(fd)
         return patterns
     end
 
-    local content, read_err = vim.loop.fs_read(fd, stat.size, 0)
-    local close_success, close_err = vim.loop.fs_close(fd)
+    local content = vim.loop.fs_read(fd, stat.size, 0)
+    vim.loop.fs_close(fd)
 
     if not content then
         return patterns
     end
 
-    -- parse content line by line more efficiently
     for line in content:gmatch("[^\r\n]+") do
-        -- remove comments and trim whitespace
         local clean_line = line:gsub("#.*$", ""):gsub("^%s*(.-)%s*$", "%1")
         if clean_line ~= "" then
-            -- pre-compile patterns for better performance
             local pattern_info = {
                 original = clean_line,
-                -- clean pattern for exact matching
                 clean = clean_line:gsub("/+$", ""),
-                -- flag for directory pattern
                 is_dir_pattern = clean_line:sub(-1) == "/",
-                -- pre-compile regex for wildcard patterns
                 regex = nil
             }
 
-            -- pre-compile regex pattern if there are wildcards
             if clean_line:find("*") then
                 pattern_info.regex = "^" .. clean_line:gsub("%.", "%%."):gsub("%*", ".*") .. "$"
             end
@@ -152,68 +143,80 @@ local function scan_directory_async(dir, use_ignore, callback)
 
     state.is_loading = true
 
-    -- show loading message
     if is_valid_buf(state.buf) then
-        vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, {"Loading files..."})
+        vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, {"loading files..."})
     end
 
-    local function scan_recursive(current_dir, on_complete)
+    local queue = {dir}
+    local processed_dirs = {}
+    local file_count = 0
+
+    local function process_queue()
+        if #queue == 0 then
+            state.is_loading = false
+            callback(files)
+            return
+        end
+
+        local current_dir = table.remove(queue, 1)
+        if processed_dirs[current_dir] then
+            process_queue()
+            return
+        end
+        processed_dirs[current_dir] = true
+
         vim.schedule(function()
             local handle, err = vim.loop.fs_scandir(current_dir)
             if not handle then
-                if err and err:match("Permission denied") then
-                    on_complete()
-                    return
-                else
-                    if err then
-                        vim.notify("Error scanning directory: " .. err, vim.log.levels.WARN)
-                    end
-                    on_complete()
-                    return
+                if err then
+                    vim.schedule(function()
+                        vim.notify("warn scanning directory: " .. current_dir .. ": " .. err, vim.log.levels.WARN)
+                    end)
                 end
+                process_queue()
+                return
             end
 
             local function process_next()
                 local name, fs_type = vim.loop.fs_scandir_next(handle)
                 if not name then
-                    on_complete()
+                    process_queue()
                     return
                 end
 
                 local full_path = current_dir .. "/" .. name
                 local rel_path = full_path:sub(#state.cwd + 2)
 
-                -- skip hidden files if not configured to show them
                 if not config.hidden and name:sub(1, 1) == "." then
                     return process_next()
                 end
 
                 if fs_type == "file" then
-                    -- check if file should be ignored
                     if not should_ignore(rel_path, ignore_patterns) then
                         table.insert(files, rel_path)
+                        file_count = file_count + 1
 
-                        -- update UI periodically to provide feedback
-                        if #files % 100 == 0 then
+                        if file_count % 100 == 0 then
                             vim.schedule(function()
                                 if is_valid_buf(state.buf) and state.is_loading then
-                                    local display_lines = {"Loading files... (" .. #files .. " found)"}
+                                    local display_lines = {"loading files... (" .. file_count .. " found)"}
                                     vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, display_lines)
                                 end
                             end)
                         end
+
+                        if file_count >= config.max_results then
+                            state.is_loading = false
+                            callback(files)
+                            return
+                        end
                     end
                     process_next()
                 elseif fs_type == "directory" then
-                    -- check if directory should be ignored
                     if not should_ignore(rel_path, ignore_patterns) then
-                        -- recursively scan subdirectory
-                        scan_recursive(full_path, function()
-                            process_next()
-                        end)
-                    else
-                        process_next()
+                        table.insert(queue, full_path)
                     end
+                    process_next()
                 else
                     process_next()
                 end
@@ -223,14 +226,7 @@ local function scan_directory_async(dir, use_ignore, callback)
         end)
     end
 
-    scan_recursive(dir, function()
-        state.is_loading = false
-        if state.loading_timer then
-            pcall(function() state.loading_timer:close() end)
-            state.loading_timer = nil
-        end
-        callback(files)
-    end)
+    process_queue()
 end
 
 local function get_open_buffers(use_ignore)
@@ -287,93 +283,6 @@ local function fuzzy_match(term, str)
     return true
 end
 
-local function update_results()
-    if #state.search_term == 0 then
-        state.results = {}
-
-        -- show all files when search is empty
-        for i = 1, math.min(#state.all_files, config.max_results) do
-            table.insert(state.results, state.all_files[i])
-        end
-    else
-        state.results = {}
-        local matches = {} -- will hold {file, score}
-        local lower_term = state.search_term:lower()
-
-        -- filter files based on search term
-        for _, file in ipairs(state.all_files) do
-            local lower_file = file:lower()
-            if fuzzy_match(lower_term, lower_file) then
-                -- prioritize exact substring matches at the beginning
-                local score = 0
-                local start_index = string.find(lower_file, lower_term, 1, true) -- plain search
-
-                if start_index then
-                    -- exact match bonus: earlier start gets lower score
-                    score = start_index - 1000000
-                else
-                    -- find first occurrence of first char for fuzzy matches
-                    local first_char = lower_term:sub(1, 1)
-                    start_index = string.find(lower_file, first_char, 1, true) or 1
-                    score = start_index
-                end
-
-                -- secondary sort: shorter paths first
-                score = score + #file * 0.000001
-
-                table.insert(matches, { file = file, score = score  })
-            end
-        end
-
-        -- sort by score (lower is better)
-        table.sort(matches, function(a, b)
-            if a.score == b.score then
-                return a.file < b.file
-            end
-            return a.score < b.score
-        end)
-
-        -- take top results
-        for i = 1, math.min(#matches, config.max_results) do
-            table.insert(state.results, matches[i].file)
-        end
-    end
-
-    -- adjustment selection index
-    if #state.results > 0 then
-        if state.selected_index == 0 then
-            -- keep selection in search input
-        elseif state.selected_index > #state.results then
-            state.selected_index = #state.results
-        end
-    else
-        state.selected_index = 0
-    end
-end
-
-local function open_file(filepath)
-    local full_path
-    if filepath:match("^/") or (is_windows() and filepath:match("^%a:\\")) then
-        full_path = filepath
-    else
-        full_path = state.cwd.."/"..filepath
-    end
-    full_path = full_path:gsub("/+", "/") -- normalize path
-
-    -- switch to original window and open file there
-    if state.original_win and vim.api.nvim_win_is_valid(state.original_win) then
-        vim.api.nvim_set_current_win(state.original_win)
-
-        -- run :edit command to properly handle buffer loading
-        vim.cmd("edit " .. vim.fn.fnameescape(full_path))
-        return true
-    else
-        -- fallback to current window
-        vim.cmd("edit " .. vim.fn.fnameescape(full_path))
-        return true
-    end
-end
-
 local function update_display()
     if not is_valid_buf(state.buf) then return end
 
@@ -428,6 +337,90 @@ local function update_display()
                 }
             )
         end
+    end
+end
+
+local function update_results()
+    if #state.search_term == 0 then
+        state.results = {}
+        for i = 1, math.min(#state.all_files, config.max_results) do
+            table.insert(state.results, state.all_files[i])
+        end
+    else
+        state.results = {}
+        local matches = {}
+        local lower_term = state.search_term:lower()
+
+        for _, file in ipairs(state.all_files) do
+            local lower_file = file:lower()
+            if fuzzy_match(lower_term, lower_file) then
+                local score = 0
+                local start_index = string.find(lower_file, lower_term, 1, true)
+
+                if start_index then
+                    score = start_index - 1000000
+                else
+                    local first_char = lower_term:sub(1, 1)
+                    start_index = string.find(lower_file, first_char, 1, true) or 1
+                    score = start_index
+                end
+
+                score = score + #file * 0.000001
+                table.insert(matches, { file = file, score = score })
+
+                -- Batasi hasil sementara selama pencarian
+                if #matches >= config.max_results then
+                    break
+                end
+            end
+        end
+
+        table.sort(matches, function(a, b)
+            if a.score == b.score then
+                return a.file < b.file
+            end
+            return a.score < b.score
+        end)
+
+        for i = 1, math.min(#matches, config.max_results) do
+            state.results[i] = matches[i].file
+        end
+    end
+
+    if #state.results > 0 then
+        if state.selected_index == 0 then
+            -- keep selection in search input
+        elseif state.selected_index > #state.results then
+            state.selected_index = #state.results
+        end
+    else
+        state.selected_index = 0
+    end
+
+    -- Update display immediately when results change
+    update_display()
+end
+
+local function open_file(filepath)
+    local full_path
+    if filepath:match("^/") or (is_windows() and filepath:match("^%a:\\")) then
+        full_path = filepath
+    else
+        full_path = state.cwd.."/"..filepath
+    end
+    full_path = full_path:gsub("/+", "/") -- normalize path
+
+    -- switch to original window and open file there
+    if state.original_win and vim.api.nvim_win_is_valid(state.original_win) then
+        vim.api.nvim_set_current_win(state.original_win)
+
+        -- run :edit command to properly handle buffer loading
+        vim.cmd("edit " .. vim.fn.fnameescape(full_path))
+        return true
+    else
+        -- fallback to current window
+        vim.cmd("edit " .. vim.fn.fnameescape(full_path))
+        return true
     end
 end
 
@@ -619,7 +612,6 @@ local function setup_keymaps_and_ui()
                 state.selected_index = 0
                 state.search_term = state.search_term .. char
                 update_results()
-                update_display()
                 local line_count = vim.api.nvim_buf_line_count(state.buf)
                 if state.header_lines <= line_count then
                     local line_content = vim.api.nvim_buf_get_lines(state.buf, state.header_lines - 1, state.header_lines, false)[1] or ""
@@ -680,7 +672,6 @@ local function setup_keymaps_and_ui()
                 if input ~= state.search_term then
                     state.search_term = input
                     update_results()
-                    update_display()
 
                     -- keep cursor in search input with bounds check
                     if state.selected_index == 0 then
@@ -783,7 +774,6 @@ local function create_window(mode)
         state.search_term = ""
         state.selected_index = 0
         update_results()
-        update_display()
         vim.api.nvim_command("startinsert")
         local line_count = vim.api.nvim_buf_line_count(state.buf)
         if state.header_lines <= line_count then
@@ -801,7 +791,7 @@ local function create_window(mode)
 
         local files_callback = function(files)
             if mode == "files" then
-                -- clombine files dari directory (dengan ignore) dan buffers (tanpa ignore)
+                -- combine files dari directory (dengan ignore) dan buffers (tanpa ignore)
                 local buffer_files = get_open_buffers(false)
 
                 -- merge dan remove duplicates
@@ -825,7 +815,6 @@ local function create_window(mode)
             state.search_term = ""
             state.selected_index = 0
             update_results()
-            update_display()
             vim.api.nvim_command("startinsert")
             local line_count = vim.api.nvim_buf_line_count(state.buf)
             if state.header_lines <= line_count then
@@ -847,16 +836,12 @@ local function create_window(mode)
     end
 end
 
----
-
 -- this xplrr command list
 XPLRR.cmd = {
     xplrr = "Xplrr",
     xplrr_all = "XplrrAll",
     xplrr_buffers = "XplrrBuffers",
 }
-
----
 
 -- call xplrr for all (files + buffers) with ignore support
 function XPLRR.toggle()
@@ -885,8 +870,6 @@ function XPLRR.toggle_buffers()
     end
 end
 
----
-
 function XPLRR.setup()
     vim.api.nvim_create_user_command(
         XPLRR.cmd.xplrr,
@@ -911,7 +894,4 @@ function XPLRR.setup()
     )
 end
 
----
-
 return XPLRR
-
