@@ -1,10 +1,10 @@
-local DBGR = {}
+local DBGGR = {}
 
 ---
 
 --[[
 
-# DBGR
+# DBGGR
 DeBuGeR
 
 ---
@@ -13,12 +13,12 @@ NOTE:
 - c & cpp project: gdb / lldb
 - rust project   : rust-gdb or rust-lldb
 - js/ts project  : node or bun or deno
-- go project     : cgdb
+- go project     : delve
 --]]
 
 ---
 
-DBGR.template = {
+DBGGR.template = {
     dot_nvim_dbgr_json_content = [[
 {
     "version": "0.2.0",
@@ -57,7 +57,7 @@ DBGR.template = {
         //     "name": "Node Example",
         //     "type": "go",
         //     "program": "${workspaceFolder}/app_go.go",
-        //     "debugger": "node"
+        //     "debugger": "delve"
         // },
     ],
     "compounds": [
@@ -78,7 +78,7 @@ DBGR.template = {
 
 ---
 
-DBGR.cmd = {
+DBGGR.cmd = {
     dbgr_run = "DbgrRun",
     dbgr_stop = "DbgrStop",
     dbgr_breakpoint = "DbgrBreakpoint",
@@ -95,7 +95,7 @@ DBGR.cmd = {
 
 ---
 
-function DBGR.setup(opts)
+function DBGGR.setup(opts)
     opts = opts or {}
 
     -- define breakpoint sign once
@@ -110,5 +110,5 @@ end
 
 ---
 
-return DBGR
+return DBGGR
 
