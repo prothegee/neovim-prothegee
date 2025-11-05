@@ -1,0 +1,11 @@
+[
+    {
+        "name": "comment spacer",
+        "body": [
+            "# --------------------------------------------------------- #"
+        ],
+        "trigger": "_comment_spacer",
+        "description": "comment spacer seperator"
+    }
+]
+
