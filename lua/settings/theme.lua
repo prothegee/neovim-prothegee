@@ -48,7 +48,7 @@ vim.cmd([[
         autocmd ColorScheme * highlight SignColumn    guibg=none guifg=none
         autocmd ColorScheme * highlight VertSplit     guibg=none guifg=#FFBB00
         autocmd ColorScheme * highlight StatusLine    guibg=#FFBB00 guifg=#121212
-        autocmd ColorScheme * highlight StatusLineNC  guibg=#121212 guifg=#FFBB00
+        autocmd ColorScheme * highlight StatusLineNC  guibg=#272727 guifg=#FFBB00
             "autocmd ColorScheme * highlight TabLine       guibg=none guifg=none
             "autocmd ColorScheme * highlight TabLineSel    guibg=none guifg=none
             "autocmd ColorScheme * highlight TabLineFill   guibg=none guifg=none
