@@ -519,33 +519,33 @@ end
 CMPLTN.capabilities = vim.lsp.protocol.make_client_capabilities()
 CMPLTN.capabilities.textDocument = {
     completion = {
-        -- contextsupport = true,
-        -- dynamicregistration = true,
+        contextsupport = true,
+        dynamicregistration = true,
         completionitem = {
-            -- tagsupport = { valueset = { 1 } },
+            tagsupport = { valueset = { 1 } },
             snippetsupport = true,
-            -- resolvesupport = {
-            --     properties = { "detail", "documentation", "additionalTextEdits", "snippets" }
-            -- },
-            -- preselectsupport = true,
-            -- deprecatedsupport = true,
-            -- labeldetailssupport = true,
-            -- documentationformat = { "markdown", "plaintext" },
-            -- insertreplacesupport = true,
-            -- inserttextmodesupport = {
-            --     valueset = { 1, 2 }
-            -- },
-            -- commitcharacterssupport = true,
+            resolvesupport = {
+                properties = { "detail", "documentation", "additionalTextEdits", "snippets" }
+            },
+            preselectsupport = true,
+            deprecatedsupport = true,
+            labeldetailssupport = true,
+            documentationformat = { "markdown", "plaintext" },
+            insertreplacesupport = true,
+            inserttextmodesupport = {
+                valueset = { 1, 2 }
+            },
+            commitcharacterssupport = true,
         }
     },
-    -- diagnostic = {
-    --     dynamicRegistration = true
-    -- },
-    -- inlineCompletion = { dynamicRegistration = true }
+    diagnostic = {
+        dynamicRegistration = true
+    },
+    inlineCompletion = { dynamicRegistration = true }
 }
--- CMPLTN.capabilities.workspace = {
---     diagnostics = { refreshSupport = true }
--- }
+CMPLTN.capabilities.workspace = {
+    diagnostics = { refreshSupport = true }
+}
 
 
 ---
