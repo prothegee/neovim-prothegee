@@ -18,6 +18,11 @@ vim.pack.add({
     },
 
     {
+        src = "git@github.com:shellRaining/hlchunk.nvim.git",
+        name = "hlchunk",
+        version = "main"
+    },
+    {
         src = "git@github.com:lewis6991/gitsigns.nvim.git",
         name = "gitsigns",
         version = "main"
@@ -52,5 +57,6 @@ end
 
 ---
 
+require"plugins.hlchunk"
 require"plugins.gitsigns"
 require"plugins.prt"
