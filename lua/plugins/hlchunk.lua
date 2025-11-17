@@ -9,7 +9,10 @@ _hlchunk.setup({
     },
     indent = {
         enable = true,
-        delay = _DELAY
+        delay = _DELAY,
+        style = {
+            "#484848"
+        }
     },
     line_num = {
         enable = true,
