@@ -11,7 +11,7 @@ local TREESITTERS = {
     "svelte",
     "gdscript", "gdshader",
     "python",
-    "html", "css", "scss",
+    "html", "css", "scss", -- "drogon-csp",
     "json", "jsonc", "json5",
     "markdown",
     "yaml",

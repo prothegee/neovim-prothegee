@@ -13,12 +13,12 @@ local LSPS = {
     "svelte",
     "gdscript", "gdshader_lsp",
     "pyright",
-    "html", "cssls",
+    "html", "cssls", "htmx-lsp", -- "drogon_csp",
     "jsonls",
     "markdown_oxide",
     "yamlls",
     "bashls",
-    -- "sqls",
+    "sqls",
 }
 
 ---
