@@ -25,7 +25,7 @@ CoMPLeTioN
 --]]
 local TRIGGER_KIND = 3
 
-local COMPLETION_DELAY = 150 -- in milliseconds
+local COMPLETION_DELAY = 60 -- in milliseconds
 
 ---
 
@@ -61,9 +61,10 @@ end
 
 local function _get_file_completions()
     local line = vim.api.nvim_get_current_line()
-    local col = vim.api.nvim_win_get_cursor(0)[2]
+    local col_1based = vim.api.nvim_win_get_cursor(0)[2]  -- col masih 1-based
+    local col = col_1based - 1  -- konversi ke 0-based
 
-    local before_cursor = line:sub(1, col + 1)
+    local before_cursor = line:sub(1, col_1based)  -- string.sub menggunakan 1-based
     local path_match = before_cursor:match("([%w%._/\\%-]*)$")
 
     if not path_match or path_match == "" then
@@ -105,8 +106,36 @@ local function _get_file_completions()
                 display_path = vim.fn.fnamemodify(full_path, ":.")
             end
 
-            local start_char = col - #file_part + 1
-            local end_char = col + 1
+            -- Hitung start_char dalam 0-based
+            local start_char = col - #file_part
+
+            -- Default end_char adalah posisi kursor dalam 0-based
+            local end_char = col
+
+            -- Handle include statements dengan benar
+            if line:match("^%s*#include%s*<") then
+                -- Cari posisi '<' dan '>'
+                local opening_bracket_pos_1based = line:find("<")
+                local closing_bracket_pos_1based = line:find(">", opening_bracket_pos_1based + 1)
+
+                if opening_bracket_pos_1based and closing_bracket_pos_1based and col_1based > opening_bracket_pos_1based then
+                    -- Pastikan end_char tidak melebihi posisi sebelum '>'
+                    if end_char >= closing_bracket_pos_1based - 1 then
+                        end_char = closing_bracket_pos_1based - 2
+                    end
+                end
+            elseif line:match('^%s*#include%s*"') then
+                -- Cari posisi '"' pertama dan kedua
+                local first_quote_pos_1based = line:find('"')
+                local second_quote_pos_1based = line:find('"', first_quote_pos_1based + 1)
+
+                if first_quote_pos_1based and second_quote_pos_1based and col_1based > first_quote_pos_1based then
+                    -- Pastikan end_char tidak melebihi posisi sebelum '"'
+                    if end_char >= second_quote_pos_1based - 1 then
+                        end_char = second_quote_pos_1based - 2
+                    end
+                end
+            end
 
             table.insert(matches, {
                 word = fname .. (is_dir and "/" or ""),
@@ -117,8 +146,8 @@ local function _get_file_completions()
                 icase = 1,
                 dup = 0,
                 user_data = {
-                    start_char = start_char - 1,
-                    end_char = end_char - 1
+                    start_char = start_char,
+                    end_char = end_char
                 }
             })
             ::continue::
@@ -132,7 +161,8 @@ local function _get_line_completions()
     local line = vim.api.nvim_get_current_line()
     local col = vim.api.nvim_win_get_cursor(0)[2]
 
-    local before_cursor = line:sub(1, col + 1)
+    -- local before_cursor = line:sub(1, col + 1)
+    local before_cursor = line:sub(1, col)
     local query = before_cursor:match("[%w_]*$") or ""
 
     if query == "" then
@@ -141,8 +171,8 @@ local function _get_line_completions()
 
     local matches = {}
     local seen = {}
-    local start_char = col - #query + 1
-    local end_char = col + 1
+    local start_char = col - #query
+    local end_char = col
 
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         if not vim.api.nvim_buf_is_valid(bufnr) then
@@ -191,8 +221,8 @@ local function _get_line_completions()
                         icase = 1,
                         dup = 0,
                         user_data = {
-                            start_char = start_char - 1,
-                            end_char = end_char - 1
+                            start_char = start_char,
+                            end_char = end_char
                         }
                     })
                     break -- 1 match per line
@@ -206,15 +236,14 @@ local function _get_line_completions()
     return matches
 end
 
+--[[
+MAYBE:
+CompleteDone:
+- required to store state of how many $n and store it
+- if $n available, highlight it, and editit,
+- pressing tab, will move to the next $n until $n is out of range
+--]]
 local function _handle_complete_done()
-    --[[
-    MAYBE:
-    CompleteDone:
-    - required to store state of how many $n and store it
-    - if $n available, highlight it, and editit,
-    - pressing tab, will move to the next $n until $n is out of range
-    --]]
-
     local data = vim.v.completed_item
     if vim.tbl_isempty(data) or not data.user_data then
         return
@@ -248,27 +277,28 @@ local function _handle_complete_done()
 
     local buf = vim.api.nvim_get_current_buf()
     local cursor = vim.api.nvim_win_get_cursor(0)
-    local row, col = cursor[1] - 1, cursor[2]
+    local row = cursor[1] - 1
 
-    local start_col = user_data.start_char
-    local end_col = col  -- current cursor
+    -- ✅ Gunakan end_char dari user_data, bukan posisi cursor saat ini
+    local start_col = user_data.start_char  -- 0-based
+    local end_col = user_data.end_char      -- 0-based
 
     local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
+    if not line then return end
 
     local body_lines = user_data.snippet_body
     if #body_lines == 0 then
         return
     end
 
-    -- use inline if just 1 line
+    -- ⚠️ string.sub uses 1-based indexing [[4]]
     if #body_lines == 1 then
-        local new_line = line:sub(1, start_col) .. body_lines[1] .. line:sub(end_col + 1)
+        local new_line = line:sub(1, start_col + 1) .. body_lines[1] .. line:sub(end_col + 1)
         vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { new_line })
-        -- Sesuaikan kursor ke akhir baris baru (opsional)
-        local new_cursor_col = start_col + #body_lines[1]
+        local new_cursor_col = start_col + 1 + #body_lines[1]
         vim.api.nvim_win_set_cursor(0, { row + 1, new_cursor_col })
     else
-        local before = line:sub(1, start_col)
+        local before = line:sub(1, start_col + 1)
         local after = line:sub(end_col + 1)
 
         local first_line = before .. body_lines[1]
@@ -324,9 +354,15 @@ _G._prt_fuzzy_completion = function(findstart, _)
     local buf, line, line_text, row, col, cursor, start_char, end_char
 
     if findstart == 1 then
+        -- Convert getcol() to 0-based
+        local col_1based = vim.fn.getcol(".")
+        col = col_1based - 1
         line = vim.fn.getline(".")
-        col = vim.fn.getcol(".")
-        return (line:sub(1, col):find("[%w_]*$") or col) - 1
+        -- Use a more inclusive pattern that supports paths and identifiers
+        local before = line:sub(1, col)
+        local word_match = before:match("[%.%w_/%-\\]*$")
+        start_char = col - (word_match and #word_match or 0)
+        return start_char
     else
         buf = vim.api.nvim_get_current_buf()
 
@@ -339,11 +375,13 @@ _G._prt_fuzzy_completion = function(findstart, _)
         local current_buf = buf
 
         cursor = vim.api.nvim_win_get_cursor(0)
-        row, col = cursor[1] - 1, cursor[2]
-        line_text = vim.fn.getline(".")
+        row, col = cursor[1] - 1, cursor[2]  -- col is 0-based
+        line_text = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1] or ""
 
-        -- initial word boundaries
-        start_char = (line_text:sub(1, col):find("[%w_]*$") or col) - 1
+        -- initial word boundaries (0-based)
+        local before_cursor = line_text:sub(1, col)
+        local word_match = before_cursor:match("[%.%w_/%-\\]*$")
+        start_char = col - (word_match and #word_match or 0)
         end_char = col
 
         -- markdown & markdown-oxide case
@@ -365,8 +403,8 @@ _G._prt_fuzzy_completion = function(findstart, _)
                         icase = 1,
                         dup = 1,
                         user_data = vim.json.encode({
-                            start_char = start_char,
-                            end_char = end_char,
+                            start_char = start_char,   -- ✅ no offset
+                            end_char = end_char,       -- ✅ no offset
                             is_snippet = true,
                             snippet_body = snippet.body
                         })
@@ -377,7 +415,7 @@ _G._prt_fuzzy_completion = function(findstart, _)
             local all = vim.list_extend(file_matches, line_matches)
 
             all = vim.list_extend(all, snippet_matches)
-            vim.fn.complete(start_char + 1, all)
+            vim.fn.complete(start_char + 1, all)  -- complete() expects 1-based start
 
             return {}
         end
@@ -519,7 +557,7 @@ end
 CMPLTN.capabilities = vim.lsp.protocol.make_client_capabilities()
 CMPLTN.capabilities.textDocument = {
     completion = {
-        contextsupport = true,
+        contextSupport = true,  -- Perbaikan: huruf 'S' kapital
         dynamicregistration = true,
         completionitem = {
             tagsupport = { valueset = { 1 } },
