@@ -1,9 +1,0 @@
-IndentWidth: 4
-AccessModifierOffset: -4
-IndentAccessModifiers: false
-BreakBeforeBraces: Attach
-AlignAfterOpenBracket: Align
-BinPackParameters: true
-AllowAllParametersOfDeclarationOnNextLine: false
-PointerAlignment: Left
-ColumnLimit: 80

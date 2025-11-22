@@ -1,13 +1,13 @@
 vim.schedule(function()
-    require"settings.global"
-    require"settings.diagnostic"
-
+    require"settings.lsp"
+    require"settings.treesitter"
+    -- skip capabilities, used in lsp
     require"settings.theme"
     require"settings.option"
+    require"settings.global"
 
     require"settings.commands"
     require"settings.keymaps"
-    require"settings.lsps"
-    require"settings.treesitters"
+    require"settings.diagnostic"
 end)
 

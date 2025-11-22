@@ -14,22 +14,8 @@ SNPPTS.snippets = {}
 
 ---
 
--- next: c
--- next: go
--- next: cpp
--- next: lua
--- next: rust
--- next: cmake
--- next: html
--- next: svelte
--- next: javascript
--- next: typescript
-
----
-
 --[[
 TODO:
-- DO NOT USE ANY PLUGIN!
 - when snippet is expand and found $n (n is number):
     - store that, so the state need to be able to change arg of that in $n, i.e
         ```
@@ -49,7 +35,7 @@ TODO:
     ```
     - become
     ```
-     struct my_typing_result_in_insert_mode {
+    struct my_typing_result_in_insert_mode {
         // TODO
     }; // struct my_typing_result_in_insert_mode 
     ```
