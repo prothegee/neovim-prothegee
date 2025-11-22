@@ -2,6 +2,8 @@
 
 __*NOTE:*__
 - using vim.pack
+- minimalism attempt
+- most keymap are default
 - meant to use for 0.12.* or above
 
 <br>
@@ -12,16 +14,16 @@ __*NOTE:*__
     - c, cpp, cmake
     - ^rust, ^go, ^zig, ^js, ^ts,
     - ^html, ^css, ^scss
-- check [this file](./lua/settings/lsps/init.lua) for lsp/s
-- check [this file](./lua/settings/treesitters/init.lua) for treesitters
+- check [this file](./lua/settings/lsp.lua) for lsp/s
+- check [this file](./lua/settings/treesitter.lua) for treesitters
 
 <br>
 
 ## used plugins
 
+- [hlchunk](https://github.com/shellRaining/hlchunk.nvim)
 - [gitsigns](https://github.com/lewis6991/gitsigns.nvim)
 - [lspconfig](https://github.com/neovim/nvim-lspconfig)
-- [onedarkpro.nvim](https://github.com/olimorris/onedarkpro.nvim)
 - [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
 
 see [this file](./lua/plugins/init.lua) for more information
@@ -33,8 +35,6 @@ see [this file](./lua/plugins/init.lua) for more information
 - [slr](./lua/nvim-prt/slr.lua)
 
 - [xplrr](./lua/nvim-prt/xplrr.lua)
-
-- [cmpltn](./lua/nvim-prt/cmpltn.lua)
 
 <br>
 
