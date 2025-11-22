@@ -25,7 +25,41 @@ CoMPLeTioN
 --]]
 local TRIGGER_KIND = 3
 
-local COMPLETION_DELAY = 150 -- in milliseconds
+local COMPLETION_DELAY = 60 -- in milliseconds
+
+---
+
+-- default capabilities
+CMPLTN.capabilities = vim.lsp.protocol.make_client_capabilities()
+CMPLTN.capabilities.textDocument = {
+    completion = {
+        contextsupport = true,
+        dynamicregistration = true,
+        completionitem = {
+            tagsupport = { valueset = { 1 } },
+            snippetsupport = true,
+            resolvesupport = {
+                properties = { "detail", "documentation", "additionalTextEdits", "snippets" }
+            },
+            preselectsupport = true,
+            deprecatedsupport = true,
+            labeldetailssupport = true,
+            documentationformat = { "markdown", "plaintext" },
+            insertreplacesupport = true,
+            inserttextmodesupport = {
+                valueset = { 1, 2 }
+            },
+            commitcharacterssupport = true,
+        }
+    },
+    diagnostic = {
+        dynamicRegistration = true
+    },
+    inlineCompletion = { dynamicRegistration = true }
+}
+CMPLTN.capabilities.workspace = {
+    diagnostics = { refreshSupport = true }
+}
 
 ---
 
@@ -53,6 +87,17 @@ local _completion_trigger = function(_, buffer)
         "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
         {
             desc = "prt auto completion manual trigger",
+            silent = true,
+            noremap = true
+        }
+    )
+
+    -- manual line completion using <C-x><C-l> since it's overwritten
+    vim.api.nvim_buf_set_keymap(buffer,
+        "i", "<C-x><C-l>",
+        "<cmd>lua require('nvim-prt.cmpltn').manual_line_completion()<CR>",
+        {
+            desc = "prt manual line completion",
             silent = true,
             noremap = true
         }
@@ -515,38 +560,24 @@ end
 
 ---
 
--- default capabilities
-CMPLTN.capabilities = vim.lsp.protocol.make_client_capabilities()
-CMPLTN.capabilities.textDocument = {
-    completion = {
-        contextsupport = true,
-        dynamicregistration = true,
-        completionitem = {
-            tagsupport = { valueset = { 1 } },
-            snippetsupport = true,
-            resolvesupport = {
-                properties = { "detail", "documentation", "additionalTextEdits", "snippets" }
-            },
-            preselectsupport = true,
-            deprecatedsupport = true,
-            labeldetailssupport = true,
-            documentationformat = { "markdown", "plaintext" },
-            insertreplacesupport = true,
-            inserttextmodesupport = {
-                valueset = { 1, 2 }
-            },
-            commitcharacterssupport = true,
-        }
-    },
-    diagnostic = {
-        dynamicRegistration = true
-    },
-    inlineCompletion = { dynamicRegistration = true }
-}
-CMPLTN.capabilities.workspace = {
-    diagnostics = { refreshSupport = true }
-}
+function CMPLTN.manual_line_completion()
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2]
 
+    local before_cursor = line:sub(1, col)
+    local query = before_cursor:match("[%w_]*$") or ""
+
+    if query == "" then
+        return
+    end
+
+    local matches = _get_line_completions()
+
+    if #matches > 0 then
+        local start_char = col - #query
+        vim.fn.complete(start_char + 1, matches)
+    end
+end
 
 ---
 
@@ -680,6 +711,12 @@ function CMPLTN.default_autocmd(supported_lsps)
             vim.api.nvim_buf_set_keymap(buffer,
                 "i", "<C-space>",
                 "<cmd>call v:lua._prt_fuzzy_completion(0, '')<CR>",
+                { silent = true, noremap = true }
+            )
+
+            vim.api.nvim_buf_set_keymap(buffer,
+                "i", "<C-x><C-l>",
+                "<cmd>lua require('nvim-prt.cmpltn').manual_line_completion()<CR>",
                 { silent = true, noremap = true }
             )
         end
