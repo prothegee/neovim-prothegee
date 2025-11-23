@@ -78,7 +78,18 @@
             "/// "
         ],
         "trigger": "_head_file_info",
-        "description": "head file info for c file"
+        "description": "head file info for cpp file"
+    },
+    {
+        "name": "struct compose",
+        "body": [
+            "struct $1 {",
+            "    // ?",
+            "}; // struct $1",
+            ""
+        ],
+        "trigger": "_struct",
+        "description": "struct compose for cpp file"
     }
 ]
 

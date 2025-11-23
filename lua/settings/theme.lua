@@ -45,10 +45,15 @@ vim.cmd([[
         autocmd ColorScheme * highlight VertSplit       guibg=none      guifg=#afaf87
 
         " "match bracket
-        autocmd ColorScheme * highlight MatchParen     guibg=#afaf87    guifg=#484848
+        autocmd ColorScheme * highlight MatchParen      guibg=#484848   guifg=#afaf87
+        "autocmd ColorScheme * highlight MatchParen      guibg=#afaf87   guifg=#484848
 
-        autocmd ColorScheme * highlight StatusLine    guibg=#afaf87 guifg=#121212
-        autocmd ColorScheme * highlight StatusLineNC  guibg=#272727 guifg=#afaf87
+        " "status line
+        autocmd ColorScheme * highlight StatusLine      guibg=#afaf87   guifg=#121212
+        autocmd ColorScheme * highlight StatusLineNC    guibg=#272727   guifg=#afaf87
+
+        " "window floating
+        autocmd ColorScheme * highlight PMenu           guibg=#333327
     augroup END
 
     "colorscheme wildcharm

@@ -14,6 +14,7 @@
 ## file: include
 ##
 /test/*/main*
+/tests/*/main*
 /nvim-pack-lock.json
 
 ##

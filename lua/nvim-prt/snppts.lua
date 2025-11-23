@@ -46,7 +46,7 @@ function SNPPTS.get_all_snippets_for_filetype()
         return {}
     end
 
-    local my_dir = require("nvim-prt").dir
+    local my_dir = require"nvim-prt".dir
     local snippet_file = my_dir .. "/snippets/" .. filetype .. ".json"
 
     local ok, stat_res = pcall(vim.loop.fs_stat, snippet_file)
@@ -70,6 +70,12 @@ function SNPPTS.get_all_snippets_for_filetype()
     end
 
     return snippets
+end
+
+---
+
+function SNPPTS.setup(opts)
+    opts = opts or {}
 end
 
 ---

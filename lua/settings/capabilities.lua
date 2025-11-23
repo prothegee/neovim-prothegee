@@ -7,7 +7,37 @@ local COMPLETION_DELAY = 60
 
 -- default capabilities
 CAPABILITIES.capabilities = vim.lsp.protocol.make_client_capabilities()
+CAPABILITIES.capabilities.textDocument = {
+    completion = {
+        contextsupport = true,
+        dynamicregistration = true,
+        completionitem = {
+            tagsupport = { valueset = { 1 } },
+            snippetsupport = true,
+            resolvesupport = {
+                properties = { "detail", "documentation", "additionalTextEdits", "snippets" }
+            },
+            preselectsupport = true,
+            deprecatedsupport = true,
+            labeldetailssupport = true,
+            documentationformat = { "markdown", "plaintext" },
+            insertreplacesupport = true,
+            inserttextmodesupport = {
+                valueset = { 1, 2 }
+            },
+            commitcharacterssupport = true,
+        }
+    },
+    diagnostic = {
+        dynamicRegistration = true
+    },
+    inlineCompletion = { dynamicRegistration = true }
+}
+CAPABILITIES.capabilities.workspace = {
+    diagnostics = { refreshSupport = true }
+}
 
+---
 ---
 
 -- @brief default completion
@@ -21,6 +51,17 @@ local _default_completion = function(buffer)
 
     -- default
     vim.bo[buffer].omnifunc = "v:lua.vim.lsp.omnifunc"
+
+    -- custom snippet
+    -- part of global.lua
+    vim.api.nvim_buf_set_keymap(buffer,
+        "i", "<C-x><C-p>",
+        "<cmd>call v:lua.prt_fuzzy_snippet(0, '')<CR>", {
+            desc = "prt custom snippet trigger",
+            silent = true,
+            noremap = true
+        }
+    )
 end
 
 ---
