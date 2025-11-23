@@ -114,6 +114,8 @@ end
 -- --------------------------------------------------------- --
 -- --------------------------------------------------------- --
 
+local snippet_processed = false
+
 local function _handle_complete_done()
     --[[
     MAYBE:
@@ -122,6 +124,11 @@ local function _handle_complete_done()
     - if $n available, highlight it, and editit,
     - pressing tab, will move to the next $n until $n is out of range
     --]]
+
+    if snippet_processed then
+        snippet_processed = false  -- reset flag
+        return
+    end
 
     local data = vim.v.completed_item
     if vim.tbl_isempty(data) or not data.user_data then
@@ -153,6 +160,9 @@ local function _handle_complete_done()
     if not user_data.is_snippet or not user_data.snippet_body then
         return
     end
+
+    -- SET FLAG SETELAH MEMPROSES SNIPPET
+    snippet_processed = true
 
     local buf = vim.api.nvim_get_current_buf()
     local cursor = vim.api.nvim_win_get_cursor(0)
@@ -328,7 +338,7 @@ end
 vim.api.nvim_create_autocmd("CompleteDone", {
     pattern = "*",
     callback = _handle_complete_done,
-    once = true
+    -- once = true
 })
 
 -- --------------------------------------------------------- --
