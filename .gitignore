@@ -13,9 +13,11 @@
 ##
 ## file: include
 ##
-/test/simple_*
+/test/*/main*
+/tests/*/main*
 /nvim-pack-lock.json
 
 ##
 ## file: exclude
 ##
+

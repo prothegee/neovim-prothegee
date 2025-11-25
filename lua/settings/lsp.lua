@@ -1,8 +1,8 @@
-local _cap = require"nvim-prt.cmpltn"
+local _cap = require"settings.capabilities"
 
 ---
 
--- default lsp/s
+-- default LSP/s
 local LSPS = {
     "lua_ls",
     "clangd", "neocmake",
@@ -72,16 +72,13 @@ for _, lsp in pairs(LSPS) do
     if vim.lsp.config then vim.lsp.config(lsp, ocap) end
 end
 
--- default
+---
+
 vim.lsp.config("*", {
     on_init = _cap.on_init,
     on_attach = _cap.on_attach,
     capabilities = _cap.capabilities
 })
 
--- finally
 vim.lsp.enable(LSPS)
-
--- autocmd/s
-_cap.default_autocmd(LSPS)
 

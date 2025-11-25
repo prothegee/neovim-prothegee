@@ -21,6 +21,7 @@ vim.diagnostic.config({
             [vim.diagnostic.severity.ERROR] = "",
         }
     },
+    update_in_insert = true,
     underline = true,
     float = {
         style = "default",
@@ -36,3 +37,4 @@ vim.diagnostic.config({
 --- error:
 --- - for some reason _ treated as error
 vim.cmd("hi link markdownError Normal")
+

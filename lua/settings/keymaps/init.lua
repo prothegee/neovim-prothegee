@@ -1,5 +1,7 @@
-require"settings.keymaps.imap_nav"
-require"settings.keymaps.nmap_nav"
-require"settings.keymaps.tab"
-require"settings.keymaps.terminal"
+vim.schedule(function()
+    require"settings.keymaps.tab"
+    require"settings.keymaps.terminal"
+    require"settings.keymaps.imap"
+    require"settings.keymaps.nmap"
+end)
 

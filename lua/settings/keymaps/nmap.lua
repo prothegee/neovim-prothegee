@@ -46,11 +46,58 @@ vim.api.nvim_set_keymap("n", "<C-S-k>",
 ---
 
 -- go to definition
--- TODO: need to store where it come from first so it can go bacl
 vim.keymap.set("n", "<S-j>",
     vim.lsp.buf.definition,
 {
     desc = "go to definition",
+    silent = true,
+    noremap = true
+})
+
+---
+
+-- diagnostic next
+vim.keymap.set("n", "]d",
+    function()
+        vim.diagnostic.jump({ count = 1, float = true })
+    end,
+{
+    desc = "go to next diagnostic",
+    silent = true,
+    noremap = true
+})
+
+-- diagnostic previous
+vim.keymap.set("n", "[d",
+    function()
+        vim.diagnostic.jump({ count = -1, float = true })
+    end,
+{
+    desc = "go to previous diagnostic",
+    silent = true,
+    noremap = true
+})
+
+---
+
+-- XPLRR
+vim.keymap.set("n", "<C-p>",
+    function()
+        vim.cmd("Xplrr")
+    end,
+{
+    desc = "XPLRR init",
+    silent = true,
+    noremap = true
+})
+
+-- CMDC
+vim.keymap.set("n", "<C-S-p>",
+    function()
+        vim.cmd("Cmdc")
+    end,
+{
+    desc = "CMDC init",
     silent = true,
     noremap = true
 })

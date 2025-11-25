@@ -1,6 +1,5 @@
-local nvim_ts_c = require"nvim-treesitter.configs"
+local _nvim_treesitter_config = require"nvim-treesitter.configs"
 
--- default treesitters
 local TREESITTERS = {
     "lua",
     "c", "cpp", "cmake",
@@ -26,12 +25,13 @@ for _, treesitter in pairs(TREESITTERS) do
     vim.treesitter.language.add(treesitter)
 end
 
-nvim_ts_c.setup{
+_nvim_treesitter_config.setup{
     ensure_installed = TREESITTERS,
     auto_install = true,
     sync_install = false,
     hightlight = {
-        enable = true
+        enable = true,
+        additional_vim_regex_highlighting = false
     }
 }
 
