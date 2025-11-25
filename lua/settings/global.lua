@@ -114,97 +114,6 @@ end
 -- --------------------------------------------------------- --
 -- --------------------------------------------------------- --
 
-local snippet_processed = false
-
-local function _handle_complete_done()
-    --[[
-    MAYBE:
-    CompleteDone:
-    - required to store state of how many $n and store it
-    - if $n available, highlight it, and editit,
-    - pressing tab, will move to the next $n until $n is out of range
-    --]]
-
-    if snippet_processed then
-        snippet_processed = false  -- reset flag
-        return
-    end
-
-    local data = vim.v.completed_item
-    if vim.tbl_isempty(data) or not data.user_data then
-        return
-    end
-
-    local user_data = data.user_data
-
-    -- if user_data is a string, it might be json encoded snippet data
-    if type(user_data) == "string" then
-        if user_data == "" then
-            return
-        end
-
-        local ok, decoded = pcall(vim.json.decode, user_data)
-
-        if not ok or type(decoded) ~= "table" then
-            return
-        end
-
-        user_data = decoded
-    elseif type(user_data) ~= "table" then
-        return
-    else
-        vim.print("cmpltn warning: not string nor table")
-        return
-    end
-
-    if not user_data.is_snippet or not user_data.snippet_body then
-        return
-    end
-
-    -- SET FLAG SETELAH MEMPROSES SNIPPET
-    snippet_processed = true
-
-    local buf = vim.api.nvim_get_current_buf()
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    local row, col = cursor[1] - 1, cursor[2]
-
-    local start_col = user_data.start_char
-    local end_col = col  -- current cursor
-
-    local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
-
-    local body_lines = user_data.snippet_body
-    if #body_lines == 0 then
-        return
-    end
-
-    -- use inline if just 1 line
-    if #body_lines == 1 then
-        local new_line = line:sub(1, start_col) .. body_lines[1] .. line:sub(end_col + 1)
-        vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { new_line })
-        -- match cursor to end of new line
-        local new_cursor_col = start_col + #body_lines[1]
-        vim.api.nvim_win_set_cursor(0, { row + 1, new_cursor_col })
-    else
-        local before = line:sub(1, start_col)
-        local after = line:sub(end_col + 1)
-
-        local first_line = before .. body_lines[1]
-        local last_line = body_lines[#body_lines] .. after
-
-        local new_lines = { first_line }
-        for i = 2, #body_lines - 1 do
-            table.insert(new_lines, body_lines[i])
-        end
-        if #body_lines > 1 then
-            table.insert(new_lines, last_line)
-        end
-
-        vim.api.nvim_buf_set_lines(buf, row, row + 1, false, new_lines)
-
-        vim.api.nvim_win_set_cursor(0, { row + 1, #first_line })
-    end
-end
 
 --[[
 -- completion was triggered by typing an identifier (24x7 code
@@ -226,8 +135,13 @@ end
 --]]
 local TRIGGER_KIND = 3
 
--- currently on for snippets (snppts)
-_G.prt_fuzzy_snippet = function(findstart, base)
+--[[
+for completion and snippet
+
+@param findstart
+@param base
+--]]
+_G.prt_fuzzy_completion = function(findstart, _)
     if vim.fn.mode() ~= "i" then
         if findstart == 1 then
             return -1
@@ -265,6 +179,8 @@ _G.prt_fuzzy_snippet = function(findstart, base)
         start_char = (line_text:sub(1, col):find("[%w_]*$") or col) - 1
         end_char = col
 
+        -- specified case?
+
         -- process text doc completion
         vim.lsp.buf_request(buf, "textDocument/completion", {
             textDocument = vim.lsp.util.make_text_document_params(),
@@ -288,12 +204,64 @@ _G.prt_fuzzy_snippet = function(findstart, base)
                 return
             end
 
-            -- local label
+            local label
             local all_matches = {}
+            local lsp_matches = {}
             local snippet_matches = {}
-            -- local lsp_matches = {}
-            -- local file_matches = {}
-            -- local line_matches = {}
+
+            for _, item in ipairs(items) do
+                label = item.textEdit and item.textEdit.newText or item.label
+
+                local kind_char, kind_text = "", ""
+
+                if item.kind then
+                    kind_text = vim.lsp.protocol.CompletionItemKind[item.kind] or ""
+                    kind_char = kind_text:sub(1, 1):lower()
+                end
+
+                -- default word boundaries 0-based
+                local default_start = start_char
+                local default_end = end_char
+
+                -- skip determine replacement range
+                local item_start, item_end
+
+                -- skip use lsp textEdit range if available
+                if item.textEdit and item.textEdit.range then
+                    item_start = item.textEdit.range.start.character
+                    item_end = item.textEdit.range["end"].character
+                else
+                    item_start = default_start
+                    item_end = default_end
+                end
+
+                -- ensure nil not pass?
+                if type(item_start) ~= "number" then item_start = default_start end
+                if type(item_end) ~= "number" then item_end = default_end end
+
+                -- clamp valid range
+                item_start = math.max(0, item_start)
+                item_end = math.min(#line_text, item_end)
+
+                local clean_label = label:gsub("%b().*", "")
+
+                -- update data match
+                table.insert(lsp_matches, {
+                    word = clean_label,
+                    abbr = clean_label,
+                    kind = kind_char,
+                    menu = kind_text,
+                    info = item.documentation and (
+                        type(item.documentation) == "string" and item.documentation or (item.documentation.value or "")
+                    ) or "",
+                    icase = 1,
+                    dup = 1,
+                    user_data = {
+                        start_char = item_start,
+                        end_char =  item_end
+                    }
+                })
+            end
 
             local all_snippets = _prt._snippets.get_all_snippets_for_filetype()
 
@@ -323,6 +291,7 @@ _G.prt_fuzzy_snippet = function(findstart, base)
             end
 
             -- final extend to all match & merge
+            all_matches = vim.list_extend(all_matches, lsp_matches)
             all_matches = vim.list_extend(all_matches, snippet_matches)
 
             -- finished with validate
@@ -334,12 +303,6 @@ _G.prt_fuzzy_snippet = function(findstart, base)
         return {}
     end
 end
--- CompleteDone
-vim.api.nvim_create_autocmd("CompleteDone", {
-    pattern = "*",
-    callback = _handle_complete_done,
-    -- once = true
-})
 
 -- --------------------------------------------------------- --
 -- --------------------------------------------------------- --
