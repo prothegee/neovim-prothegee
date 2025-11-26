@@ -150,10 +150,6 @@ _G.prt_fuzzy_completion = function(findstart, _)
         end
     end
 
-    local _prt = {
-        _snippets = require"nvim-prt.snppts"
-    }
-
     local buf, line, line_text, row, col, cursor, start_char, end_char
 
     if findstart == 1 then
@@ -207,7 +203,6 @@ _G.prt_fuzzy_completion = function(findstart, _)
             local label
             local all_matches = {}
             local lsp_matches = {}
-            local snippet_matches = {}
 
             for _, item in ipairs(items) do
                 label = item.textEdit and item.textEdit.newText or item.label
@@ -263,6 +258,85 @@ _G.prt_fuzzy_completion = function(findstart, _)
                 })
             end
 
+            -- final extend to all match & merge
+            all_matches = vim.list_extend(all_matches, lsp_matches)
+
+            -- finished with validate
+            if vim.api.nvim_get_current_buf() == current_buf and vim.fn.mode() == "i" then
+                vim.fn.complete(start_char + 1, all_matches)
+            end
+        end)
+
+        return {}
+    end
+end
+
+_G.prt_fuzzy_snippet = function(findstart, _)
+    if vim.fn.mode() ~= "i" then
+        if findstart == 1 then
+            return -1
+        else
+            return {}
+        end
+    end
+
+    local _prt = {
+        _snippets = require"nvim-prt.snppts"
+    }
+
+    local buf, line, line_text, row, col, cursor, start_char, end_char
+
+    if findstart == 1 then
+        line = vim.fn.getline(".")
+        col = vim.fn.getcol(".")
+        return (line:sub(1, col):find("[%w_]*$") or col) - 1
+    else
+        buf = vim.api.nvim_get_current_buf()
+
+        -- validate buffer
+        if not vim.api.nvim_buf_is_valid(buf) or vim.fn.mode() ~= "i" then
+            return {}
+        end
+
+        -- state current buffer
+        local current_buf = buf
+
+        cursor = vim.api.nvim_win_get_cursor(0)
+        row, col = cursor[1] - 1, cursor[2]
+        line_text = vim.fn.getline(".")
+
+        -- initial word boundaries
+        start_char = (line_text:sub(1, col):find("[%w_]*$") or col) - 1
+        end_char = col
+
+        -- specified case?
+
+        -- process text doc completion
+        vim.lsp.buf_request(buf, "textDocument/completion", {
+            textDocument = vim.lsp.util.make_text_document_params(),
+            position = { line = row, character = col },
+            context = { triggerKind = TRIGGER_KIND },
+        }, function(err, result, _)
+            -- validate state buf first
+            if not vim.api.nvim_buf_is_valid(current_buf) or vim.api.nvim_get_current_buf() ~= current_buf or vim.fn.mode() ~= "i" then
+                return
+            end
+
+            if err or not result then
+                -- vim.print("cmpltn: error nor result") -- ignore tmp print
+                return
+            end
+
+            local items = result.items or result
+
+            if not items then
+                -- vim.print("cmpltn: items is empty") -- ignore tmp print
+                return
+            end
+
+            local all_matches = {}
+            local snippet_matches = {}
+
             local all_snippets = _prt._snippets.get_all_snippets_for_filetype()
 
             for _, snippet in ipairs(all_snippets) do
@@ -291,7 +365,6 @@ _G.prt_fuzzy_completion = function(findstart, _)
             end
 
             -- final extend to all match & merge
-            all_matches = vim.list_extend(all_matches, lsp_matches)
             all_matches = vim.list_extend(all_matches, snippet_matches)
 
             -- finished with validate

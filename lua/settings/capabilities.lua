@@ -11,7 +11,8 @@ local OMNIFUNC = {
 }
 local OMNIFUNC_CALLBACK = {
     DEFAULT = "<C-x><C-o>",
-    PRT_FUZZY_COMPLETION = "<cmd>call v:lua.prt_fuzzy_completion(0, '')<CR>"
+    PRT_FUZZY_COMPLETION = "<cmd>call v:lua.prt_fuzzy_completion(0, '')<CR>",
+    PRT_FUZZY_SNIPPET = "<cmd>call v:lua.prt_fuzzy_snippet(0, '')<CR>"
 }
 
 ---
@@ -147,6 +148,19 @@ local _default_completion = function(buffer)
     vim.bo[buffer].omnifunc = OMNIFUNC.PRT_FUZZY_COMPLETION
 end
 
+local _default_keyamp = function(buffer)
+    vim.api.nvim_buf_set_keymap(buffer,
+        "i", "<C-x><C-p>",
+        OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
+        { desc = "prt fuzzy completion manual trigger",  silent = true, noremap = true }
+    )
+    vim.api.nvim_buf_set_keymap(buffer,
+        "i", "<C-x><C-[>",
+        OMNIFUNC_CALLBACK.PRT_FUZZY_SNIPPET,
+        { desc = "prt fuzzy snippet manual trigger",  silent = true, noremap = true }
+    )
+end
+
 ---
 
 -- @brief default completion
@@ -156,11 +170,7 @@ end
 function CAPABILITIES.default_completion(_, buffer)
     _default_completion(buffer)
 
-    vim.api.nvim_buf_set_keymap(buffer,
-        "i", "<C-x><C-p>",
-        OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
-        { desc = "prt fuzzy completio manual trigger",  silent = true, noremap = true }
-    )
+    _default_keyamp(buffer)
 end
 
 -- @brief on_init
@@ -278,6 +288,8 @@ vim.api.nvim_create_autocmd("FileType", {
         if not vim.api.nvim_buf_is_valid(buffer) then return end
 
         _default_completion(buffer)
+
+        _default_keyamp(buffer)
     end
 })
 -- -- BufNewFile & BufRead
