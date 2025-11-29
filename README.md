@@ -26,6 +26,7 @@ __*NOTE:*__
 - [gitsigns](https://github.com/lewis6991/gitsigns.nvim)
 - [lspconfig](https://github.com/neovim/nvim-lspconfig)
 - [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
+- [render-markdown](https://github.com/MeanderingProgrammer/render-markdown.nvim)
 
 see [this file](./lua/plugins/init.lua) for more information
 

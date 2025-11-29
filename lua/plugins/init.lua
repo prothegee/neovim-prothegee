@@ -21,6 +21,12 @@ local function _init_install_plugin()
             name = "gitsigns",
             version = "main"
         },
+
+        {
+            src = "git@github.com:MeanderingProgrammer/render-markdown.nvim.git",
+            name = "render-markdown",
+            version = "main"
+        }
     })
 end
 
@@ -50,7 +56,7 @@ end
 
 ---
 
-vim.schedule(function()
+-- vim.schedule(function()
     _init_install_plugin()
     _append_vim_pack_path()
     _append_nvim_prt_path()
@@ -58,6 +64,7 @@ vim.schedule(function()
     -- extend
     require"plugins.gitsigns"
     require"plugins.hlchunk"
+    require"plugins.render-markdown"
     require"plugins.nvim-prt"
-end)
+-- end)
 
