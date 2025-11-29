@@ -133,7 +133,7 @@ end
     - currently for function:
         - fullfil for the available params, but can't return & change for the param/s
 --]]
-local TRIGGER_KIND = 3
+local TRIGGER_KIND = 1
 
 --[[
 for completion and snippet
