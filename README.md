@@ -25,6 +25,7 @@ __*NOTE:*__
 - [hlchunk](https://github.com/shellRaining/hlchunk.nvim)
 - [gitsigns](https://github.com/lewis6991/gitsigns.nvim)
 - [lspconfig](https://github.com/neovim/nvim-lspconfig)
+- [onedarkpro](https://github.com/olimorris/onedarkpro.nvim)
 - [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
 - [render-markdown](https://github.com/MeanderingProgrammer/render-markdown.nvim)
 

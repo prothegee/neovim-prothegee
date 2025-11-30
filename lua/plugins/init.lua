@@ -23,6 +23,12 @@ local function _init_install_plugin()
         },
 
         {
+            src = "git@github.com:olimorris/onedarkpro.nvim.git",
+            name = "onedarkpro",
+            version = "main"
+        },
+
+        {
             src = "git@github.com:MeanderingProgrammer/render-markdown.nvim.git",
             name = "render-markdown",
             version = "main"
@@ -64,6 +70,7 @@ end
     -- extend
     require"plugins.gitsigns"
     require"plugins.hlchunk"
+    require"plugins.onedarkpro"
     require"plugins.render-markdown"
     require"plugins.nvim-prt"
 -- end)
