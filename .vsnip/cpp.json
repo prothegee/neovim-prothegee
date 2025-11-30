@@ -1,0 +1,126 @@
+{
+	"comment spacer": {
+		"prefix": "_comment_spacer",
+		"body": [
+			"// --------------------------------------------------------- //"
+		]
+	},
+    "struct": {
+        "prefix": "_struct",
+        "body": [
+            "struct $1 {",
+            "    // data",
+            "}; // $1"
+        ]
+    },
+    "struct typedef 1": {
+        "prefix": "_struct_typedef_1",
+        "body": [
+            "typedef struct {",
+            "    // data",
+            "} $1;"
+        ]
+    },
+	"struct typedef 2": {
+        "prefix": "_struct_typedef_2",
+        "body": [
+            "typedef struct $1 {",
+            "    // data",
+            "} $2;"
+        ]
+    },
+	"class": {
+		"prefix": "_class",
+		"body": [
+			"class $1 {",
+			"public:",
+			"    $1() = default;",
+			"    ~$1() = default;",
+            "}; // $1"
+		]
+	},
+	"class pub": {
+		"prefix": "_class_pub",
+		"body": [
+			"class $1 {",
+			"public:",
+			"    $1() = default;",
+			"    ~$1() = default;",
+            "}; // $1"
+		]
+	},
+	"class pub pvt": {
+		"prefix": "_class_pub_pvt",
+		"body": [
+			"class $1 {",
+			"public:",
+			"     $1() = default;",
+			"    ~$1() = default;",
+			"",
+			"private:",
+            "    // data",
+            "}; // $1"
+		]
+	},
+	"namespace": {
+		"prefix": "_namespace",
+		"body": [
+			"namesapce $1 {",
+			"",
+			"// TODO",
+			"",
+			"} // $1"
+		]
+	},
+	"if not define define": {
+		"prefix": "_ifndef_def_endif",
+		"body": [
+			"#ifndef $1",
+			"#define $1",
+			"#endif // $1"
+		]
+	},
+	"int main": {
+		"prefix": "_int_main",
+		"body": [
+			"int main() {",
+            "    return 0;",
+            "}"
+		]
+	},
+	"int main argc argv": {
+		"prefix": "_int_main_argc_argv",
+		"body": [
+			"int main(int argc, char *argv[]) {",
+            "    return 0;",
+            "}"
+		]
+	},
+	"head file info": {
+		"prefix": "_head_file_info",
+		"body": [
+			"/// ### file: $TM_FILENAME_BASE",
+            "/// ",
+            "/// ### author: $1",
+            "/// ",
+            "/// ---------------------------------------------------------",
+            "/// ",
+            "/// ### brief:",
+            "/// n/a",
+            "/// ",
+            "/// ### note:",
+            "/// n/a",
+            "/// ",
+            "/// ---------------------------------------------------------",
+            "/// ",
+            "/// ### copyright:",
+            "/// ",
+            "/// - (c) $2 $3 // $4 // $5",
+            "/// ",
+            "/// ### contributors:",
+            "/// ",
+            "/// - $3 // $4 // $5"
+		]
+	}
+}
+

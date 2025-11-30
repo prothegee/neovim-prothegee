@@ -2,36 +2,61 @@ local function _init_install_plugin()
     vim.pack.add({
         {
             src = "git@github.com:neovim/nvim-lspconfig.git",
-            name = "lspconfig",
-            version = "master"
+            -- name = "lspconfig",
+            -- version = "master"
         },
         {
             src = "git@github.com:nvim-treesitter/nvim-treesitter.git",
-            name = "nvim-treesitter",
-            version = "master"
+            -- name = "nvim-treesitter",
+            -- version = "master"
         },
 
         {
             src = "git@github.com:shellRaining/hlchunk.nvim.git",
-            name = "hlchunk",
-            version = "main"
+            -- name = "hlchunk",
+            -- version = "main"
         },
         {
             src = "git@github.com:lewis6991/gitsigns.nvim.git",
-            name = "gitsigns",
-            version = "main"
+            -- name = "gitsigns",
+            -- version = "main"
         },
 
         {
             src = "git@github.com:olimorris/onedarkpro.nvim.git",
-            name = "onedarkpro",
-            version = "main"
+            -- name = "onedarkpro",
+            -- version = "main"
         },
 
         {
             src = "git@github.com:MeanderingProgrammer/render-markdown.nvim.git",
-            name = "render-markdown",
-            version = "main"
+            -- name = "render-markdown",
+            -- version = "main"
+        },
+
+        {
+            src = "git@github.com:hrsh7th/cmp-nvim-lsp.git"
+        },
+        {
+            src = "git@github.com:hrsh7th/cmp-buffer.git"
+        },
+        {
+            src = "git@github.com:hrsh7th/cmp-path.git"
+        },
+        {
+            src = "git@github.com:hrsh7th/cmp-cmdline.git"
+        },
+        {
+            src = "git@github.com:hrsh7th/nvim-cmp.git"
+        },
+        {
+            src = "git@github.com:hrsh7th/cmp-vsnip.git"
+        },
+        {
+            src = "git@github.com:hrsh7th/vim-vsnip.git"
+        },
+        {
+            src = "git@github.com:hrsh7th/vim-vsnip-integ.git"
         }
     })
 end
@@ -72,6 +97,7 @@ end
     require"plugins.hlchunk"
     require"plugins.onedarkpro"
     require"plugins.render-markdown"
+    require"plugins.cmp"
     require"plugins.nvim-prt"
 -- end)
 

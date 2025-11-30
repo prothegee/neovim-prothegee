@@ -17,91 +17,92 @@ local OMNIFUNC_CALLBACK = {
 
 ---
 
---[[
-MAYBE:
-CompleteDone:
-- required to store state of how many $n and store it
-- if $n available, highlight it, and editit,
-- pressing tab, will move to the next $n until $n is out of range
---]]
-local function _handle_complete_done()
-    local data = vim.v.completed_item
-    if vim.tbl_isempty(data) or not data.user_data then
-        return
-    end
-
-    local user_data = data.user_data
-
-    -- if user_data is a string, it might be json encoded snippet data
-    if type(user_data) == "string" then
-        if user_data == "" then
-            return
-        end
-
-        local ok, decoded = pcall(vim.json.decode, user_data)
-
-        if not ok or type(decoded) ~= "table" then
-            return
-        end
-
-        user_data = decoded
-    elseif type(user_data) ~= "table" then
-        return
-    else
-        vim.print("warning: not string nor table")
-        return
-    end
-
-    if not user_data.is_snippet or not user_data.snippet_body then
-        return
-    end
-
-    local buf = vim.api.nvim_get_current_buf()
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    local row, col = cursor[1] - 1, cursor[2]
-
-    local start_col = user_data.start_char
-    local end_col = col  -- current cursor
-
-    local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
-
-    local body_lines = user_data.snippet_body
-    if #body_lines == 0 then
-        return
-    end
-
-    -- use inline if just 1 line
-    if #body_lines == 1 then
-        local new_line = line:sub(1, start_col) .. body_lines[1] .. line:sub(end_col + 1)
-        vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { new_line })
-        -- match cursor to end of new line
-        local new_cursor_col = start_col + #body_lines[1]
-        vim.api.nvim_win_set_cursor(0, { row + 1, new_cursor_col })
-    else
-        local before = line:sub(1, start_col)
-        local after = line:sub(end_col + 1)
-
-        local first_line = before .. body_lines[1]
-        local last_line = body_lines[#body_lines] .. after
-
-        local new_lines = { first_line }
-        for i = 2, #body_lines - 1 do
-            table.insert(new_lines, body_lines[i])
-        end
-        if #body_lines > 1 then
-            table.insert(new_lines, last_line)
-        end
-
-        vim.api.nvim_buf_set_lines(buf, row, row + 1, false, new_lines)
-
-        vim.api.nvim_win_set_cursor(0, { row + 1, #first_line })
-    end
-end
+-- --[[
+-- MAYBE:
+-- CompleteDone:
+-- - required to store state of how many $n and store it
+-- - if $n available, highlight it, and editit,
+-- - pressing tab, will move to the next $n until $n is out of range
+-- --]]
+-- local function _handle_complete_done()
+--     local data = vim.v.completed_item
+--     if vim.tbl_isempty(data) or not data.user_data then
+--         return
+--     end
+--
+--     local user_data = data.user_data
+--
+--     -- if user_data is a string, it might be json encoded snippet data
+--     if type(user_data) == "string" then
+--         if user_data == "" then
+--             return
+--         end
+--
+--         local ok, decoded = pcall(vim.json.decode, user_data)
+--
+--         if not ok or type(decoded) ~= "table" then
+--             return
+--         end
+--
+--         user_data = decoded
+--     elseif type(user_data) ~= "table" then
+--         return
+--     else
+--         vim.print("warning: not string nor table")
+--         return
+--     end
+--
+--     if not user_data.is_snippet or not user_data.snippet_body then
+--         return
+--     end
+--
+--     local buf = vim.api.nvim_get_current_buf()
+--     local cursor = vim.api.nvim_win_get_cursor(0)
+--     local row, col = cursor[1] - 1, cursor[2]
+--
+--     local start_col = user_data.start_char
+--     local end_col = col  -- current cursor
+--
+--     local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
+--
+--     local body_lines = user_data.snippet_body
+--     if #body_lines == 0 then
+--         return
+--     end
+--
+--     -- use inline if just 1 line
+--     if #body_lines == 1 then
+--         local new_line = line:sub(1, start_col) .. body_lines[1] .. line:sub(end_col + 1)
+--         vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { new_line })
+--         -- match cursor to end of new line
+--         local new_cursor_col = start_col + #body_lines[1]
+--         vim.api.nvim_win_set_cursor(0, { row + 1, new_cursor_col })
+--     else
+--         local before = line:sub(1, start_col)
+--         local after = line:sub(end_col + 1)
+--
+--         local first_line = before .. body_lines[1]
+--         local last_line = body_lines[#body_lines] .. after
+--
+--         local new_lines = { first_line }
+--         for i = 2, #body_lines - 1 do
+--             table.insert(new_lines, body_lines[i])
+--         end
+--         if #body_lines > 1 then
+--             table.insert(new_lines, last_line)
+--         end
+--
+--         vim.api.nvim_buf_set_lines(buf, row, row + 1, false, new_lines)
+--
+--         vim.api.nvim_win_set_cursor(0, { row + 1, #first_line })
+--     end
+-- end
 
 ---
 
 -- default capabilities
-CAPABILITIES.capabilities = vim.lsp.protocol.make_client_capabilities()
+-- CAPABILITIES.capabilities = vim.lsp.protocol.make_client_capabilities()
+CAPABILITIES.capabilities = require("cmp_nvim_lsp").default_capabilities()
 CAPABILITIES.capabilities.textDocument = {
     completion = {
         contextsupport = true,
@@ -121,6 +122,7 @@ CAPABILITIES.capabilities.textDocument = {
                 valueset = { 1, 2 }
             },
             commitcharacterssupport = true,
+            enable_completions = true
         }
     },
     diagnostic = {
@@ -199,6 +201,8 @@ vim.api.nvim_create_autocmd("BufEnter", {
     callback = function(args)
         local buffer = args.buf
 
+        vim.print(vim.bo.filetype)
+
         if not vim.api.nvim_buf_is_valid(buffer) then return end
 
         _default_completion(buffer)
@@ -238,29 +242,29 @@ vim.api.nvim_create_autocmd("LspAttach", {
         CAPABILITIES.on_attach(client, buffer)
     end
 })
--- -- InsertCharPre 
--- vim.api.nvim_create_autocmd("InsertCharPre", {
---     callback = function(args)
---         local buffer = args.buf
---
---         if not vim.api.nvim_buf_is_valid(buffer) then return end
---         if vim.api.nvim_buf_get_name(buffer) == "" then return end
---
---         if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
---             vim.defer_fn(function()
---                 -- validate state first, prevent close buffer
---                 if vim.api.nvim_buf_is_valid(buffer) and
---                    vim.api.nvim_get_current_buf() == buffer and
---                    vim.fn.mode() == "i" then
---                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
---                         OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
---                         true, true, true
---                     ), "n")
---                 end
---             end, COMPLETION_DELAY)
---         end
---     end
--- })
+-- InsertCharPre 
+vim.api.nvim_create_autocmd("InsertCharPre", {
+    callback = function(args)
+        local buffer = args.buf
+
+        if not vim.api.nvim_buf_is_valid(buffer) then return end
+        if vim.api.nvim_buf_get_name(buffer) == "" then return end
+
+        if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
+            vim.defer_fn(function()
+                -- validate state first, prevent close buffer
+                if vim.api.nvim_buf_is_valid(buffer) and
+                   vim.api.nvim_get_current_buf() == buffer and
+                   vim.fn.mode() == "i" then
+                    vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
+                        OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
+                        true, true, true
+                    ), "n")
+                end
+            end, COMPLETION_DELAY)
+        end
+    end
+})
 -- -- TextChangedI
 -- vim.api.nvim_create_autocmd("TextChangedI", {
 --     callback = function(args)
@@ -306,11 +310,11 @@ vim.api.nvim_create_autocmd({"BufNewFile", "BufRead"}, {
         end
     end
 })
--- CompleteDone
-vim.api.nvim_create_autocmd("CompleteDone", {
-    pattern = "*",
-    callback = _handle_complete_done
-})
+-- -- CompleteDone
+-- vim.api.nvim_create_autocmd("CompleteDone", {
+--     pattern = "*",
+--     callback = _handle_complete_done
+-- })
 
 ---
 

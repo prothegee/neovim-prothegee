@@ -32,7 +32,7 @@
     {
         "name": "int main argc argv",
         "body": [
-            "int main(int argc, char* argv[]) {",
+            "int main(int argc, char *argv[]) {",
             "    return 0;",
             "}",
             ""
@@ -68,6 +68,17 @@
         ],
         "trigger": "_head_file_info",
         "description": "head file info for c file"
+    },
+    {
+        "name": "struct compose",
+        "body": [
+            "struct $1 {",
+            "    // ?",
+            "}; // struct $1",
+            ""
+        ],
+        "trigger": "_struct",
+        "description": "struct compose for cpp file"
     }
 ]
 
