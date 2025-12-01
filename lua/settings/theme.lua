@@ -97,7 +97,7 @@ vim.cmd([[
             "autocmd ColorScheme * highlight MsgSeparator  guibg=none guifg=none
 
         "" pmenu
-            autocmd ColorScheme * highlight Pmenu       guibg=none    guifg=#DFA600
+            autocmd ColorScheme * highlight Pmenu       guibg=none guifg=#DFA600
             autocmd ColorScheme * highlight PmenuSel    guibg=#DFA600 guifg=#121212
             autocmd ColorScheme * highlight PmenuBorder guibg=#121212 guifg=#DFA600
             autocmd ColorScheme * highlight PmenuSbar   guibg=#121212 guifg=#DFA600
@@ -119,12 +119,12 @@ vim.cmd([[
             "autocmd ColorScheme * highlight LspReferenceWrite         guibg=none guifg=none
 
         "" completion
-            "autocmd ColorScheme * highlight CmpItemAbbr           guibg=none guifg=none
-            "autocmd ColorScheme * highlight CmpItemAbbrDeprecated guibg=none guifg=none
-            "autocmd ColorScheme * highlight CmpItemAbbrMatch      guibg=none guifg=none
-            "autocmd ColorScheme * highlight CmpItemAbbrMatchFuzzy guibg=none guifg=none
-            "autocmd ColorScheme * highlight CmpItemKind           guibg=none guifg=none
-            "autocmd ColorScheme * highlight CmpItemMenu           guibg=none guifg=none
+            autocmd ColorScheme * highlight CmpItemAbbr           guibg=none guifg=none
+            autocmd ColorScheme * highlight CmpItemAbbrDeprecated guibg=none guifg=none
+            autocmd ColorScheme * highlight CmpItemAbbrMatch      guibg=none guifg=none
+            autocmd ColorScheme * highlight CmpItemAbbrMatchFuzzy guibg=none guifg=none
+            autocmd ColorScheme * highlight CmpItemKind           guibg=none guifg=none
+            autocmd ColorScheme * highlight CmpItemMenu           guibg=none guifg=none
     augroup END
 
     colorscheme onedark

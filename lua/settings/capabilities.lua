@@ -146,21 +146,21 @@ local _default_completion = function(buffer)
     vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
     vim.opt.wildignorecase = true
 
-    -- default
-    vim.bo[buffer].omnifunc = OMNIFUNC.PRT_FUZZY_COMPLETION
+    -- -- default
+    -- vim.bo[buffer].omnifunc = OMNIFUNC.PRT_FUZZY_COMPLETION
 end
 
 local _default_keyamp = function(buffer)
-    vim.api.nvim_buf_set_keymap(buffer,
-        "i", "<C-x><C-p>",
-        OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
-        { desc = "prt fuzzy completion manual trigger",  silent = true, noremap = true }
-    )
-    vim.api.nvim_buf_set_keymap(buffer,
-        "i", "<C-x><C-[>",
-        OMNIFUNC_CALLBACK.PRT_FUZZY_SNIPPET,
-        { desc = "prt fuzzy snippet manual trigger",  silent = true, noremap = true }
-    )
+    -- vim.api.nvim_buf_set_keymap(buffer,
+    --     "i", "<C-x><C-p>",
+    --     OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
+    --     { desc = "prt fuzzy completion manual trigger",  silent = true, noremap = true }
+    -- )
+    -- vim.api.nvim_buf_set_keymap(buffer,
+    --     "i", "<C-x><C-[>",
+    --     OMNIFUNC_CALLBACK.PRT_FUZZY_SNIPPET,
+    --     { desc = "prt fuzzy snippet manual trigger",  silent = true, noremap = true }
+    -- )
 end
 
 ---
@@ -242,29 +242,29 @@ vim.api.nvim_create_autocmd("LspAttach", {
         CAPABILITIES.on_attach(client, buffer)
     end
 })
--- InsertCharPre 
-vim.api.nvim_create_autocmd("InsertCharPre", {
-    callback = function(args)
-        local buffer = args.buf
-
-        if not vim.api.nvim_buf_is_valid(buffer) then return end
-        if vim.api.nvim_buf_get_name(buffer) == "" then return end
-
-        if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
-            vim.defer_fn(function()
-                -- validate state first, prevent close buffer
-                if vim.api.nvim_buf_is_valid(buffer) and
-                   vim.api.nvim_get_current_buf() == buffer and
-                   vim.fn.mode() == "i" then
-                    vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
-                        OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
-                        true, true, true
-                    ), "n")
-                end
-            end, COMPLETION_DELAY)
-        end
-    end
-})
+-- -- InsertCharPre 
+-- vim.api.nvim_create_autocmd("InsertCharPre", {
+--     callback = function(args)
+--         local buffer = args.buf
+--
+--         if not vim.api.nvim_buf_is_valid(buffer) then return end
+--         if vim.api.nvim_buf_get_name(buffer) == "" then return end
+--
+--         if vim.bo[buffer].omnifunc ~= "" and vim.fn.mode() == "i" and vim.fn.pumvisible() == 0 then
+--             vim.defer_fn(function()
+--                 -- validate state first, prevent close buffer
+--                 if vim.api.nvim_buf_is_valid(buffer) and
+--                    vim.api.nvim_get_current_buf() == buffer and
+--                    vim.fn.mode() == "i" then
+--                     vim.fn.feedkeys(vim.api.nvim_replace_termcodes(
+--                         OMNIFUNC_CALLBACK.PRT_FUZZY_COMPLETION,
+--                         true, true, true
+--                     ), "n")
+--                 end
+--             end, COMPLETION_DELAY)
+--         end
+--     end
+-- })
 -- -- TextChangedI
 -- vim.api.nvim_create_autocmd("TextChangedI", {
 --     callback = function(args)
