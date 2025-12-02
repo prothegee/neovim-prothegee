@@ -726,8 +726,8 @@ local function create_window(mode)
         return
     end
 
-    local width = math.floor(vim.o.columns * 0.87)
-    local height = math.floor(vim.o.lines * 0.87)
+    local width = math.floor(vim.o.columns * 0.75)
+    local height = math.floor(vim.o.lines * 0.50)
 
     local title = "XPLRR"
     if state.mode == "files" then
