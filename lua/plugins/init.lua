@@ -57,6 +57,10 @@ local function _init_install_plugin()
         },
         {
             src = "git@github.com:hrsh7th/vim-vsnip-integ.git"
+        },
+
+        {
+            src = "git@github.com:chomosuke/typst-preview.nvim.git"
         }
     })
 end
@@ -98,6 +102,7 @@ end
     require"plugins.onedarkpro"
     require"plugins.render-markdown"
     require"plugins.cmp"
+    require"plugins.typst-preview"
     require"plugins.nvim-prt"
 -- end)
 

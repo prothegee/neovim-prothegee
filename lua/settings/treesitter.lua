@@ -12,8 +12,8 @@ local TREESITTERS = {
     "python",
     "html", "css", "scss", -- "drogon-csp",
     "json", "jsonc", "json5",
-    "markdown",
-    "yaml",
+    "markdown", "typst",
+    "yaml", "toml",
     "bash",
     "sql",
 }

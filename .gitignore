@@ -15,6 +15,7 @@
 ##
 /test/*/main*
 /tests/*/main*
+/tests/**
 /nvim-pack-lock.json
 
 ##

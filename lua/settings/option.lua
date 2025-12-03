@@ -3,7 +3,7 @@ vim.opt.timeoutlen = 240
 
 vim.opt.showmode = false
 vim.opt.number = true
-vim.opt.relativenumber = true
+vim.opt.relativenumber = false
 
 -- start tab
 vim.opt.tabstop = 4
@@ -19,7 +19,7 @@ vim.opt.fillchars = { eob = " " }
 -- vim.opt.whichwrap:append "<>[]hl"
 
 -- rounded single double shadow
-vim.opt.winborder = "rounded"
+vim.opt.winborder = "single"
 
 -- ensure split vertical when press v in netrw
 vim.opt.splitright = true

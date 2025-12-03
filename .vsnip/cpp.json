@@ -33,43 +33,21 @@
 		"prefix": "_class",
 		"body": [
 			"class $1 {",
-			"public:",
-			"    $1() = default;",
-			"    ~$1() = default;",
-            "}; // $1"
-		]
-	},
-	"class pub": {
-		"prefix": "_class_pub",
-		"body": [
-			"class $1 {",
-			"public:",
-			"    $1() = default;",
-			"    ~$1() = default;",
-            "}; // $1"
-		]
-	},
-	"class pub pvt": {
-		"prefix": "_class_pub_pvt",
-		"body": [
-			"class $1 {",
-			"public:",
-			"     $1() = default;",
-			"    ~$1() = default;",
-			"",
-			"private:",
             "    // data",
+			"public:",
+			"    $1() = default;",
+			"    ~$1() = default;",
             "}; // $1"
 		]
 	},
 	"namespace": {
 		"prefix": "_namespace",
 		"body": [
-			"namesapce $1 {",
+			"namespace $1 {",
 			"",
 			"// TODO",
 			"",
-			"} // $1"
+			"} // namespace $1"
 		]
 	},
 	"if not define define": {

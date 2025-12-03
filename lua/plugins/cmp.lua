@@ -18,8 +18,8 @@ _cmp.setup({
         end,
     },
     window = {
-        completion = _cmp.config.window.bordered(),
-        documentation = _cmp.config.window.bordered(),
+        -- completion = _cmp.config.window.bordered(),
+        -- documentation = _cmp.config.window.bordered(),
     },
     mapping = _cmp.mapping.preset.insert({
         -- ["<C-b>"] = _cmp.mapping.scroll_docs(-4),
