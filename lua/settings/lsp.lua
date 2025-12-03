@@ -6,7 +6,7 @@ local _cap = require"settings.capabilities"
 local LSPS = {
     "lua_ls",
     "clangd", "neocmake",
-    "rust_analyzer",
+    "rust_analyzer", "taplo",
     "gopls",
     "ts_ls",
     "zls", -- "ziggy", "ziggy_schema",
