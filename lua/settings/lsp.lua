@@ -12,8 +12,8 @@ local LSPS = {
     "zls", -- "ziggy", "ziggy_schema",
     "svelte",
     "gdscript", "gdshader_lsp",
-    "pyright",
-    "html", "cssls", "htmx-lsp", -- "drogon_csp",
+    "pylyzer", -- "pyright", "pylsp", "jedi_language_server"
+    "html", "cssls", -- "htmx-lsp", -- "drogon_csp",
     "jsonls",
     "markdown_oxide",
     "yamlls",

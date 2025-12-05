@@ -12,7 +12,7 @@ __*NOTE:*__
 
 - configured for:
     - c, c++, cmake
-    - ^rust, ^go, ^zig, ^js, ^ts,
+    - ^rust, ^go, ^zig, ^js, ^ts, ^python
     - ^markdown, ^sql
     - ^html, ^css, ^scss, ^htmx
 - check [this file](./lua/settings/lsp.lua) for lsp/s
