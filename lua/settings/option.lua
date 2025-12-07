@@ -29,3 +29,6 @@ custom opt clipboard
 --]]
 vim.opt.clipboard = "unnamedplus"
 
+-- check imap.lua; pressing esc will move forward 1 step
+vim.opt.virtualedit = "onemore"
+
