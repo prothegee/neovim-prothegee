@@ -33,7 +33,7 @@ vim.cmd([[
     " " - gold (bright): #FFBB00
     " " - gold (calm)  : #DFA600
 
-    augroup TransparentGrp
+    augroup InternalTheme
        autocmd!
         autocmd ColorScheme * highlight Normal        guibg=none guifg=none
         autocmd ColorScheme * highlight NormalNC      guibg=none guifg=none
@@ -112,7 +112,7 @@ vim.cmd([[
             "autocmd ColorScheme * highlight DiagnosticUnderlineWarn   guibg=none guifg=none
             "autocmd ColorScheme * highlight DiagnosticUnderlineInfo   guibg=none guifg=none
             "autocmd ColorScheme * highlight DiagnosticUnderlineHint   guibg=none guifg=none
-        
+
         "" lsp
             "autocmd ColorScheme * highlight LspReferenceText          guibg=none guifg=none
             "autocmd ColorScheme * highlight LspReferenceRead          guibg=none guifg=none
