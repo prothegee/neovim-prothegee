@@ -19,7 +19,7 @@ vim.opt.fillchars = { eob = " " }
 -- vim.opt.whichwrap:append "<>[]hl"
 
 -- rounded single double shadow
-vim.opt.winborder = "single"
+vim.opt.winborder = "rounded"
 
 -- ensure split vertical when press v in netrw
 vim.opt.splitright = true
