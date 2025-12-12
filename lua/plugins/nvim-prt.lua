@@ -29,7 +29,14 @@ _prt.cmdc.setup({
         end,
         ["Typst Preview: Stop"] = function()
             vim.cmd("TypstPreviewStop")
-        end
+        end,
+        --
+        ["TAB: New"] = function()
+            vim.cmd("tabnew")
+        end,
+        ["TAB: New Term"] = function()
+            vim.cmd("tabnew +term")
+        end,
     }
 })
 

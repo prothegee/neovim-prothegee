@@ -2,8 +2,8 @@ vim.opt.updatetime = 120
 vim.opt.timeoutlen = 240
 
 vim.opt.showmode = false
-vim.opt.number = true
-vim.opt.relativenumber = false
+vim.opt.number = false
+vim.opt.relativenumber = true
 
 -- start tab
 vim.opt.tabstop = 4
