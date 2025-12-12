@@ -10,7 +10,7 @@ local LSPS = {
     "gopls",
     "ts_ls",
     "zls", -- "ziggy", "ziggy_schema",
-    "svelte",
+    "svelte", "vue_ls",
     "gdscript", "gdshader_lsp",
     "basedpyright", -- "pylyzer", "pyright", "pylsp", "jedi_language_server",
     "html", "cssls", -- "htmx-lsp", -- "drogon_csp",

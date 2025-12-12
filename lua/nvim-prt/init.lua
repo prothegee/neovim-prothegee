@@ -4,7 +4,7 @@ local version = {
     major = 0,
     minor = 15,
     patch = 0,
-    dates = 20251207,
+    dates = 20251212,
 }
 
 ---
