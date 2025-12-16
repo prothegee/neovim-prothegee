@@ -32,6 +32,8 @@ vim.cmd([[
     " "note:
     " " - gold (bright): #FFBB00
     " " - gold (calm)  : #DFA600
+    " " - dark (deep)  : #121212
+    " " - dark (grey)  : #272727
 
     augroup InternalTheme
        autocmd!
