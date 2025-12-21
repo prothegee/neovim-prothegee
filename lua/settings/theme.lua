@@ -52,7 +52,7 @@ vim.cmd([[
         autocmd ColorScheme * highlight WinSeparator  guibg=none guifg=#DFA600
             "autocmd ColorScheme * highlight Folded        guibg=none guifg=none
             "autocmd ColorScheme * highlight FoldColumn    guibg=none guifg=none
-        autocmd ColorScheme * highlight CursorLine    guibg=#DFA600 guifg=#121212
+        "autocmd ColorScheme * highlight CursorLine    guibg=#DFA600 guifg=#121212
             "autocmd ColorScheme * highlight CursorColumn  guibg=none guifg=none
             "autocmd ColorScheme * highlight ColorColumn   guibg=none guifg=none
         autocmd ColorScheme * highlight LineNr        guibg=none guifg=#DFA600
@@ -130,8 +130,13 @@ vim.cmd([[
     augroup END
 
     colorscheme onedark
-]])
 
+    " block current line
+    set cursorline
+]])
+--[[
+dwawdawd
+--]]
 ---
 
 -- status line
