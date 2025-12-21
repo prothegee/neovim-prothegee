@@ -1,0 +1,17 @@
+{
+    "comment spacer": {
+		"prefix": "_comment_spacer",
+		"body": [
+			"// --------------------------------------------------------- //"
+		]
+	},
+    "void !main pub": {
+        "prefix": "_void_!main_pub",
+        "body": [
+            "pub fn main() !void {",
+            "    // TODO",
+            "}"
+        ]
+    }
+}
+
