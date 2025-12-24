@@ -7,15 +7,15 @@ vim.opt.relativenumber = true
 
 -- start tab
 vim.opt.tabstop = 4
--- vim.opt.expandtab = true
+vim.opt.expandtab = true
 vim.opt.shiftwidth = 4
--- vim.opt.smartindent = true
+vim.opt.smartindent = true
 vim.opt.softtabstop = 4
 -- end tab
 
 vim.opt.fillchars = { eob = " " }
 -- greeter
--- vim.opt.shortmess::append "sI"
+-- vim.opt.shortmess:append "sI"
 -- vim.opt.whichwrap:append "<>[]hl"
 
 -- rounded single double shadow
@@ -31,4 +31,3 @@ vim.opt.clipboard = "unnamedplus"
 
 -- check imap.lua; pressing esc will move forward 1 step
 vim.opt.virtualedit = "onemore"
-
