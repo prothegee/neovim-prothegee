@@ -36,7 +36,7 @@ vim.cmd([[
     " " - dark (grey)  : #272727
 
     augroup InternalTheme
-       autocmd!
+        autocmd!
         autocmd ColorScheme * highlight Normal        guibg=none guifg=none
         autocmd ColorScheme * highlight NormalNC      guibg=none guifg=none
         autocmd ColorScheme * highlight NormalFloat   guibg=none guifg=#DFA600
@@ -52,7 +52,7 @@ vim.cmd([[
         autocmd ColorScheme * highlight WinSeparator  guibg=none guifg=#DFA600
             "autocmd ColorScheme * highlight Folded        guibg=none guifg=none
             "autocmd ColorScheme * highlight FoldColumn    guibg=none guifg=none
-        "autocmd ColorScheme * highlight CursorLine    guibg=#DFA600 guifg=#121212
+        autocmd ColorScheme * highlight CursorLine    guibg=#454545 guifg=none
             "autocmd ColorScheme * highlight CursorColumn  guibg=none guifg=none
             "autocmd ColorScheme * highlight ColorColumn   guibg=none guifg=none
         autocmd ColorScheme * highlight LineNr        guibg=none guifg=#DFA600
